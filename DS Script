@@ -1,0 +1,587 @@
+local player = game.Players.localPlayer
+
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
+
+local Window = OrionLib:MakeWindow({Name = "Exeploit", HidePremium = false, SaveConfig = true, ConfigFolder = "OrionTest"})
+
+--[[
+Name = <string> - The name of the UI.
+HidePremium = <bool> - Whether or not the user details shows Premium status or not.
+SaveConfig = <bool> - Toggles the config saving in the UI.
+ConfigFolder = <string> - The name of the folder where the configs are saved.
+IntroEnabled = <bool> - Whether or not to show the intro animation.
+IntroText = <string> - Text to show in the intro animation.
+IntroIcon = <string> - URL to the image you want to use in the intro animation.
+Icon = <string> - URL to the image you want displayed on the window.
+CloseCallback = <function> - Function to execute when the window is closed.
+]]
+
+local PlayerTab = Window:MakeTab({
+	Name = "Player Stuffs",
+	Icon = "rbxassetid://4483345998",
+	PremiumOnly = false
+})
+
+--[[
+Name = <string> - The name of the tab.
+Icon = <string> - The icon of the tab.
+PremiumOnly = <bool> - Makes the tab accessible to Sirus Premium users only.
+]]
+
+local Section = PlayerTab:AddSection({
+	Name = "LocalPlayer"
+})
+
+--[[
+Name = <string> - The name of the section.
+]]
+
+OrionLib:MakeNotification({
+	Name = "Bypassed!",
+	Content = "Criado Por ExeSonicPrzz!",
+	Image = "rbxassetid://4483345998",
+	Time = 10
+})
+
+--[[
+Title = <string> - The title of the notification.
+Content = <string> - The content of the notification.
+Image = <string> - The icon of the notification.
+Time = <number> - The duration of the notfication.
+]]
+
+--[[
+Title = <string> - The title of the notification.
+Content = <string> - The content of the notification.
+Image = <string> - The icon of the notification.
+Time = <number> - The duration of the notfication.
+]]
+
+--[[
+Title = <string> - The title of the notification.
+Content = <string> - The content of the notification.
+Image = <string> - The icon of the notification.
+Time = <number> - The duration of the notfication.
+]]
+
+local function createESP(player)
+    if player ~= game.Players.LocalPlayer then
+        local esp = Instance.new("BillboardGui", player.Character.Head)
+        esp.Name = "ESP"
+        esp.Size = UDim2.new(1, 0, 1, 0)
+        esp.AlwaysOnTop = true
+
+        local nameLabel = Instance.new("TextLabel", esp)
+        nameLabel.Text = player.Name
+        nameLabel.Size = UDim2.new(1, 0, 0.5, 0)
+        nameLabel.TextColor3 = Color3.new(1, 0, 0)
+        nameLabel.BackgroundTransparency = 1
+
+        local healthLabel = Instance.new("TextLabel", esp)
+        healthLabel.Text = "Health: " .. player.Character.Humanoid.Health
+        healthLabel.Size = UDim2.new(1, 0, 0.5, 0)
+        healthLabel.Position = UDim2.new(0, 0, 0.5, 0)
+        healthLabel.TextColor3 = Color3.new(0, 1, 0)
+        healthLabel.BackgroundTransparency = 1
+
+        player.Character.Humanoid:GetPropertyChangedSignal("Health"):Connect(function()
+            healthLabel.Text = "Health: " .. player.Character.Humanoid.Health
+        end)
+    end
+end
+
+local function onPlayerAdded(player)
+    player.CharacterAdded:Connect(function()
+        createESP(player)
+    end)
+end
+
+for _, player in pairs(game.Players:GetPlayers()) do
+    onPlayerAdded(player)
+end
+
+game.Players.PlayerAdded:Connect(onPlayerAdded)
+
+PlayerTab:AddButton({
+	Name = "Button!",
+	Callback = function()
+      		print("button pressed")
+      		for _, player in pairs(game.Players:GetPlayers()) do
+          		if player.Character then
+              			createESP(player)
+          		end
+      		end
+  	end    
+})
+
+PlayerTab:AddToggle({
+    Name = "Correr Muito Rapido!",
+    Default = false,
+    Callback = function(Value)
+        local player = game.Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        
+        if humanoid then
+            if Value then
+                humanoid.WalkSpeed = 200
+            else
+                humanoid.WalkSpeed = 16 -- Default walk speed
+            end
+        else
+            warn("Humanoid not found!")
+        end
+    end    
+})
+
+-- Initialize the library
+OrionLib:Init()
+
+PlayerTab:AddToggle({
+    Name = "Pular Muito Alto!",
+    Default = false,
+    Callback = function(Value)
+        local player = game.Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        
+        if humanoid then
+            if Value then
+                humanoid.JumpPower = 200
+            else
+                humanoid.JumpPower = 50 -- Default jump power
+            end
+        else
+            warn("Humanoid not found!")
+        end
+    end    
+})
+
+-- Initialize the library
+OrionLib:Init()
+
+local AutoFarmTab = Window:MakeTab({
+    Name = "AutoFarm/Main",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+AutoFarmTab:AddToggle({
+    Name = "Enable Anti-Ban",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            -- Function to check for moderators
+            local function checkForModerators()
+                local moderators = {"Alligaterror", "Voltacoatl", "Tatzelwurm", "Spooki", "Type⁵", "Hadedon", "Horradon", "Metron Katastrofeas", "Otoru Kyofu", "Andy"} -- Replace with actual moderator usernames
+                local players = game.Players:GetPlayers()
+                
+                for _, player in ipairs(players) do
+                    if table.find(moderators, player.Name) then
+                        game.Players.LocalPlayer:Kick("Moderator joined the game.")
+                    end
+                end
+            end
+            
+            -- Connect the function to PlayerAdded event
+            game.Players.PlayerAdded:Connect(checkForModerators)
+            
+            -- Initial check in case a moderator is already in the game
+            checkForModerators()
+        end
+    end    
+})
+
+-- Initialize the library
+OrionLib:Init()
+
+local HungerLoopEnabled = false
+
+local function HungerLoop()
+    while HungerLoopEnabled do
+        wait(0.1)
+        game.Workspace.GameEvents.EatPlant:FireServer(game.Workspace.GameMap.Ferns.Fern, 10) -- Increase hunger
+        local A_1 = game:GetService("Workspace").GameMap.Water.Water
+        local A_2 = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame.p
+        local Event = game:GetService("Workspace").GameEvents.addThirst
+        Event:FireServer(A_1, A_2) -- Give water
+        game.Workspace.GameEvents.EatPlant:FireServer(game.Workspace.GameMap.Ferns.Fern, 10) -- Increase hunger
+    end
+end
+
+local function startHungerLoop()
+    HungerLoopEnabled = true
+    HungerLoop()
+end
+
+local function stopHungerLoop()
+    HungerLoopEnabled = false
+end
+
+AutoFarmTab:AddToggle({
+    Name = "Comida E Água Infinita PVP",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            startHungerLoop()
+        else
+            stopHungerLoop()
+        end
+    end    
+})
+
+-- Initialize the library
+OrionLib:Init()
+
+local WaterInvisible = false
+
+local function setWaterVisibility(visible)
+    local waterObject = game:GetService("Workspace").GameMap.Water.Water
+    if waterObject then
+        waterObject.Transparency = visible and 0 or 1
+        waterObject.CanCollide = visible
+    else
+        print("Water object not found!")
+    end
+end
+
+local function startWaterInvisible()
+    WaterInvisible = true
+    setWaterVisibility(false)
+end
+
+local function stopWaterInvisible()
+    WaterInvisible = false
+    setWaterVisibility(true)
+end
+
+AutoFarmTab:AddToggle({
+    Name = "Melhor Visibilidade Sobre A Agua (PVP)",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            startWaterInvisible()
+        else
+            stopWaterInvisible()
+        end
+    end    
+})
+
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+-- Create a larger platform behind the map at the given coordinates
+local platformArgen = Instance.new("Part")
+platformArgen.Size = Vector3.new(200, 1, 200) -- Increased size for bigger dinosaurs
+platformArgen.Anchored = true
+platformArgen.Position = Vector3.new(2600, 803, 1949) -- New position for Auto Farm Argen
+platformArgen.Parent = workspace
+
+local platformElder = Instance.new("Part")
+platformElder.Size = Vector3.new(200, 1, 200) -- Increased size for smaller dinosaurs
+platformElder.Anchored = true
+platformElder.Position = Vector3.new(2297, 1158, 1797) -- Standard position for Auto Elder
+platformElder.Parent = workspace
+
+local autoFarmEnabled = false
+local autoElderEnabled = false
+local autoFoodAndWaterEnabled = false
+
+-- Define the regions with their coordinates
+local regions = {
+    ["Ghastly Ruins"] = Vector3.new(-1192, 334, 362),
+    Graveyard = Vector3.new(-1942, 182, -403),
+    ["Haunted Forest"] = Vector3.new(139, 168, -1428),
+    LakeStomach = Vector3.new(-1006, 252, -1288),
+    ["Manor Of Souls"] = Vector3.new(225, 298, -914),
+    ["Pumpking Field"] = Vector3.new(-289, 181, -458),
+    Spookiville = Vector3.new(-2022, 188, 616)
+}
+
+-- Function to get the current bonus region
+local function getCurrentBonusRegion()
+    for regionName, _ in pairs(regions) do
+        local region = workspace:FindFirstChild(regionName)
+        if region and region:FindFirstChild("BonusActive") then
+            return regionName
+        end
+    end
+    return "Wilderness"
+end
+
+-- Function to check and update region bonus
+local function updateRegionBonus()
+    while autoFarmEnabled or autoElderEnabled do
+        local currentBonusRegion = getCurrentBonusRegion()
+        if currentBonusRegion ~= "Wilderness" then
+            local currentPosition = regions[currentBonusRegion]
+            humanoidRootPart.CFrame = CFrame.new(currentPosition)
+        end
+        wait(900) -- Wait for the duration of the region bonus
+    end
+end
+
+-- Function to make all parts of the character non-collidable
+local function setCharacterNonCollidable(collide)
+    for _, part in pairs(character:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = collide
+        end
+    end
+end
+
+-- Function to float the player smoothly to the platform using BodyPosition and BodyGyro
+local function floatToPlatform(force, damping, speed, platform)
+    local targetPosition = platform.Position + Vector3.new(0, 5, 0)
+    local bodyPosition = Instance.new("BodyPosition")
+    bodyPosition.Position = targetPosition
+    bodyPosition.MaxForce = Vector3.new(force, force, force)
+    bodyPosition.D = damping
+    bodyPosition.P = speed
+    bodyPosition.Parent = humanoidRootPart
+
+    local bodyGyro = Instance.new("BodyGyro")
+    bodyGyro.CFrame = humanoidRootPart.CFrame
+    bodyGyro.MaxTorque = Vector3.new(force, force, force)
+    bodyGyro.P = speed
+    bodyGyro.Parent = humanoidRootPart
+
+    setCharacterNonCollidable(false) -- Make character non-collidable
+
+    humanoidRootPart.Anchored = true
+    wait(1)
+    humanoidRootPart.Anchored = false
+
+    wait(5) -- Keep non-collidable for a while
+    setCharacterNonCollidable(true) -- Restore collision
+end
+
+-- Function to add thirst
+local function addThirst()
+    local water = game:GetService("Workspace").GameMap.Water.Water
+    local position = player.Character.HumanoidRootPart.CFrame.p
+    local event = game:GetService("Workspace").GameEvents.addThirst
+    event:FireServer(water, position)
+end
+
+-- Function to add food
+local function addFood()
+    local fern = game.Workspace.GameMap.Ferns.Fern
+    local event = game.Workspace.GameEvents.EatPlant
+    event:FireServer(fern, 2)
+end
+
+-- Start interval to add thirst and food every 2 seconds
+local function startFoodAndWater()
+    while autoFoodAndWaterEnabled do
+        addThirst()
+        addFood()
+        wait(2)
+    end
+end
+
+-- Function to handle character respawn or growth
+local function onCharacterAdded(newCharacter)
+    character = newCharacter
+    humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+    if autoFarmEnabled then
+        floatToPlatform(300000000, 500, 8000, platformArgen) -- Massive force and speed for Auto Farm Argen
+    elseif autoElderEnabled then
+        floatToPlatform(1000000, 500, 5000, platformElder) -- Increased force and smooth speed for Auto Elder
+    end
+end
+
+-- Toggle callback functions
+local function onAutoFarmToggle(value)
+    autoFarmEnabled = value
+    if autoFarmEnabled then
+        floatToPlatform(300000000, 500, 8000, platformArgen)
+        updateRegionBonus() -- Start updating region bonus
+    end
+end
+
+local function onAutoElderToggle(value)
+    autoElderEnabled = value
+    if autoElderEnabled then
+        floatToPlatform(1000000, 500, 5000, platformElder)
+        updateRegionBonus() -- Start updating region bonus
+    end
+end
+
+local function onAutoFoodAndWaterToggle(value)
+    autoFoodAndWaterEnabled = value
+    if autoFoodAndWaterEnabled then
+        startFoodAndWater()
+    end
+end
+
+-- Connect the character added event to handle respawn and growth
+player.CharacterAdded:Connect(onCharacterAdded)
+
+-- Ensure the player floats to the platform whenever they spawn or grow
+character.ChildAdded:Connect(function(child)
+    if child:IsA("Humanoid") then
+        child:GetPropertyChangedSignal("Health"):Connect(function()
+            if autoFarmEnabled and child.Health > 0 then
+                floatToPlatform(300000000, 500, 8000, platformArgen)
+            elseif autoElderEnabled and child.Health > 0 then
+                floatToPlatform(1000000, 500, 5000, platformElder)
+            end
+        end)
+    end
+end)
+
+-- Re-apply float to platform every few seconds to handle growth stages
+while autoFarmEnabled or autoElderEnabled do
+    if autoFarmEnabled then
+        floatToPlatform(300000000, 500, 8000, platformArgen)
+    elseif autoElderEnabled then
+        floatToPlatform(1000000, 500, 5000, platformElder)
+    end
+    wait(5) -- Re-apply every 5 seconds
+end
+
+-- Add the toggles to the UI
+AutoFarmTab:AddToggle({
+    Name = "Auto Farm (Argentinosaurus)",
+    Default = false,
+    Callback = function(value)
+        onAutoFarmToggle(value)
+    end
+})
+
+AutoFarmTab:AddToggle({
+    Name = "Auto Elder",
+    Default = false,
+    Callback = function(value)
+        onAutoElderToggle(value)
+    end
+})
+
+AutoFarmTab:AddToggle({
+    Name = "Comida E Agua Automatico (Farm)",
+    Default = false,
+    Callback = function(value)
+        onAutoFoodAndWaterToggle(value)
+    end
+})
+
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+local autoFarmEnabled = false
+local autoElderEnabled = false
+
+local function getDinosaurData()
+    local memoryCard = player:WaitForChild("MemoryCard")
+    local dinosaurData = memoryCard:WaitForChild("DinosaurData")
+    return dinosaurData:GetChildren()
+end
+
+local function hasDinosaurOrSkin(dinosaurName)
+    local dinosaurData = getDinosaurData()
+    for _, dino in pairs(dinosaurData) do
+        if dino:FindFirstChild("Skins") then
+            for _, skin in pairs(dino.Skins:GetChildren()) do
+                if skin.Name:lower() == dinosaurName:lower() then
+                    print("Skin found: " .. skin.Name .. ", Base Dino: " .. dino.Name)
+                    return true, skin.Name
+                end
+            end
+        end
+        if dino.Name:lower() == dinosaurName:lower() then
+            print("Dinosaur found: " .. dino.Name)
+            return true, dino.Name
+        end
+    end
+    return false, nil
+end
+
+local function spawnDinosaurOrSkin(dinosaurName)
+    local hasDino, baseDinoName = hasDinosaurOrSkin(dinosaurName)
+    if hasDino then
+        local a = baseDinoName or dinosaurName
+        local targ = dinosaurName
+        workspace.GameEvents.ChangeDinosaur:FireServer(a)
+        wait(1)
+        workspace.GameEvents.StartPlayer:FireServer()
+        wait(0.1)
+        workspace.GameEvents.ChangeDinosaur:FireServer(targ)
+        print("Spawning " .. dinosaurName .. " as " .. (baseDinoName or ""))
+    else
+        local a = dinosaurName
+        local targ = dinosaurName
+        workspace.GameEvents.ChangeDinosaur:FireServer(a)
+        wait(1)
+        workspace.GameEvents.StartPlayer:FireServer()
+        wait(0.1)
+        workspace.GameEvents.ChangeDinosaur:FireServer(targ)
+        print("Forcing spawn of " .. dinosaurName)
+    end
+end
+
+local function buyItem(itemName)
+    spawn(function()
+        print(workspace.GameFunctions.PurchasingDino:InvokeServer(itemName))
+    end)
+end
+
+local Tab = Window:MakeTab({
+    Name = "Dino Stuffs",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+local Section1 = Tab:AddSection({
+    Name = "Jogar Com Uma Skin Ou Dino"
+})
+
+local dinosaurName
+
+Section1:AddTextbox({
+    Name = "Nome Do Dino/Skin",
+    Default = "",
+    TextDisappear = false,
+    Callback = function(value)
+        dinosaurName = value
+    end
+})
+
+Section1:AddButton({
+    Name = "Spawnar",
+    Callback = function()
+        if dinosaurName then
+            spawnDinosaurOrSkin(dinosaurName)
+        else
+            print("Please enter the dinosaur name.")
+        end
+    end
+})
+
+local Section2 = Tab:AddSection({
+    Name = "Compra Skin Ou Dinossauros"
+})
+
+local itemName
+
+Section2:AddTextbox({
+    Name = "Nome Do Dino/Skin",
+    Default = "",
+    TextDisappear = false,
+    Callback = function(value)
+        itemName = value
+    end
+})
+
+Section2:AddButton({
+    Name = "Comprar Skin/Dino",
+    Callback = function()
+        if itemName then
+            buyItem(itemName)
+        else
+            print("Coloque O Nome Do Dino/Skin Aqui!.")
+        end
+    end
+})
