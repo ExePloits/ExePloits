@@ -38,7 +38,7 @@ Name = <string> - The name of the section.
 
 OrionLib:MakeNotification({
 	Name = "Bypassed!",
-	Content = "Criado Por ExeSonicPrzz!",
+	Content = "Criado/Created Por/By ExeSonicPrzz!",
 	Image = "rbxassetid://4483345998",
 	Time = 10
 })
@@ -64,36 +64,74 @@ Image = <string> - The icon of the notification.
 Time = <number> - The duration of the notfication.
 ]]
 
-local function createESP(player)
-    if player ~= game.Players.LocalPlayer then
-        local esp = Instance.new("BillboardGui", player.Character.Head)
-        esp.Name = "ESP"
-        esp.Size = UDim2.new(1, 0, 1, 0)
-        esp.AlwaysOnTop = true
+local espEnabled = false
+local espConnections = {}
 
-        local nameLabel = Instance.new("TextLabel", esp)
-        nameLabel.Text = player.Name
-        nameLabel.Size = UDim2.new(1, 0, 0.5, 0)
-        nameLabel.TextColor3 = Color3.new(1, 0, 0)
-        nameLabel.BackgroundTransparency = 1
+local function createESP(character)
+    if not character:FindFirstChild("Head") then return end
 
-        local healthLabel = Instance.new("TextLabel", esp)
-        healthLabel.Text = "Health: " .. player.Character.Humanoid.Health
-        healthLabel.Size = UDim2.new(1, 0, 0.5, 0)
-        healthLabel.Position = UDim2.new(0, 0, 0.5, 0)
-        healthLabel.TextColor3 = Color3.new(0, 1, 0)
-        healthLabel.BackgroundTransparency = 1
+    local esp = Instance.new("BillboardGui", character.Head)
+    esp.Name = "ESP"
+    esp.Size = UDim2.new(2, 0, 2, 0) -- Increase size for better visibility from afar
+    esp.AlwaysOnTop = true
+    esp.ExtentsOffset = Vector3.new(0, 3, 0) -- Adjust position for better visibility
 
-        player.Character.Humanoid:GetPropertyChangedSignal("Health"):Connect(function()
-            healthLabel.Text = "Health: " .. player.Character.Humanoid.Health
-        end)
+    local nameLabel = Instance.new("TextLabel", esp)
+    nameLabel.Text = character.Name
+    nameLabel.Size = UDim2.new(1, 0, 0.5, 0)
+    nameLabel.TextColor3 = Color3.new(1, 0, 0)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.TextStrokeTransparency = 0 -- Outline for better visibility
+
+    local box = Instance.new("BoxHandleAdornment", character)
+    box.Size = character.HumanoidRootPart.Size
+    box.Adornee = character.HumanoidRootPart
+    box.AlwaysOnTop = true
+    box.ZIndex = 1
+    box.Color3 = Color3.new(0, 1, 0)
+    box.Transparency = 0.5
+
+    local healthLabel = Instance.new("TextLabel", esp)
+    healthLabel.Text = "Health: " .. character.Humanoid.Health
+    healthLabel.Size = UDim2.new(1, 0, 0.5, 0)
+    healthLabel.Position = UDim2.new(0, 0, 0.5, 0)
+    healthLabel.TextColor3 = Color3.new(0, 1, 0)
+    healthLabel.BackgroundTransparency = 1
+    healthLabel.TextStrokeTransparency = 0 -- Outline for better visibility
+
+    character.Humanoid:GetPropertyChangedSignal("Health"):Connect(function()
+        healthLabel.Text = "Health: " .. character.Humanoid.Health
+    end)
+end
+
+local function removeESP(character)
+    if character:FindFirstChild("Head") then
+        if character.Head:FindFirstChild("ESP") then
+            character.Head.ESP:Destroy()
+        end
+        if character:FindFirstChildOfClass("BoxHandleAdornment") then
+            character:FindFirstChildOfClass("BoxHandleAdornment"):Destroy()
+        end
+    end
+end
+
+local function onCharacterAdded(character)
+    if espEnabled then
+        createESP(character)
     end
 end
 
 local function onPlayerAdded(player)
-    player.CharacterAdded:Connect(function()
-        createESP(player)
-    end)
+    player.CharacterAdded:Connect(onCharacterAdded)
+    if player.Character then
+        onCharacterAdded(player.Character)
+    end
+end
+
+local function onPlayerRemoving(player)
+    if player.Character then
+        removeESP(player.Character)
+    end
 end
 
 for _, player in pairs(game.Players:GetPlayers()) do
@@ -101,61 +139,39 @@ for _, player in pairs(game.Players:GetPlayers()) do
 end
 
 game.Players.PlayerAdded:Connect(onPlayerAdded)
-
-PlayerTab:AddButton({
-	Name = "Button!",
-	Callback = function()
-      		print("button pressed")
-      		for _, player in pairs(game.Players:GetPlayers()) do
-          		if player.Character then
-              			createESP(player)
-          		end
-      		end
-  	end    
-})
+game.Players.PlayerRemoving:Connect(onPlayerRemoving)
 
 PlayerTab:AddToggle({
-    Name = "Correr Muito Rapido!",
+    Name = "Dinosaur ESP",
     Default = false,
-    Callback = function(Value)
-        local player = game.Players.LocalPlayer
-        local character = player.Character or player.CharacterAdded:Wait()
-        local humanoid = character:FindFirstChildOfClass("Humanoid")
-        
-        if humanoid then
-            if Value then
-                humanoid.WalkSpeed = 200
-            else
-                humanoid.WalkSpeed = 16 -- Default walk speed
+    Callback = function(value)
+        espEnabled = value
+        if espEnabled then
+            for _, player in pairs(game.Players:GetPlayers()) do
+                if player.Character then
+                    createESP(player.Character)
+                end
             end
         else
-            warn("Humanoid not found!")
-        end
-    end    
-})
-
--- Initialize the library
-OrionLib:Init()
-
-PlayerTab:AddToggle({
-    Name = "Pular Muito Alto!",
-    Default = false,
-    Callback = function(Value)
-        local player = game.Players.LocalPlayer
-        local character = player.Character or player.CharacterAdded:Wait()
-        local humanoid = character:FindFirstChildOfClass("Humanoid")
-        
-        if humanoid then
-            if Value then
-                humanoid.JumpPower = 200
-            else
-                humanoid.JumpPower = 50 -- Default jump power
+            for _, player in pairs(game.Players:GetPlayers()) do
+                if player.Character then
+                    removeESP(player.Character)
+                end
             end
-        else
-            warn("Humanoid not found!")
         end
-    end    
+    end
 })
+
+-- Update ESP in real time when the local player's dinosaur respawns or menu-spawns
+game.Players.LocalPlayer.CharacterAdded:Connect(function(character)
+    if espEnabled then
+        for _, player in pairs(game.Players:GetPlayers()) do
+            if player.Character then
+                createESP(player.Character)
+            end
+        end
+    end
+end)
 
 -- Initialize the library
 OrionLib:Init()
@@ -166,32 +182,62 @@ local AutoFarmTab = Window:MakeTab({
     PremiumOnly = false
 })
 
-AutoFarmTab:AddToggle({
-    Name = "Enable Anti-Ban",
-    Default = false,
-    Callback = function(Value)
-        if Value then
-            -- Function to check for moderators
-            local function checkForModerators()
-                local moderators = {"Alligaterror", "Voltacoatl", "Tatzelwurm", "Spooki", "Type⁵", "Hadedon", "Horradon", "Metron Katastrofeas", "Otoru Kyofu", "Andy"} -- Replace with actual moderator usernames
-                local players = game.Players:GetPlayers()
-                
-                for _, player in ipairs(players) do
-                    if table.find(moderators, player.Name) then
-                        game.Players.LocalPlayer:Kick("Moderator joined the game.")
-                    end
-                end
-            end
-            
-            -- Connect the function to PlayerAdded event
-            game.Players.PlayerAdded:Connect(checkForModerators)
-            
-            -- Initial check in case a moderator is already in the game
-            checkForModerators()
-        end
-    end    
-})
+local enabled = false
+local moderators = {"Rekkusu, Destroyer of Worlds", "Lucas Tha Kittygator", "Violex Behemoth", "Mad Al", "Supersuchus", "Alligaterror", "Vexahias", "?????", "Zweinova-Exa", "Apocalios", "Crimson Soaked Terranotus", "Igneous Teravore", "Ultimallosaurus", "Anastasia", "Overmoth", "Lucy", "Droid", "Voltacoatl", "Kralkatorrik", "Spooki"} -- Actual moderator usernames
 
+-- Function to check for moderators
+local function checkForModerators()
+    local players = game.Players:GetPlayers()
+    for _, player in ipairs(players) do
+        if table.find(moderators, player.Name) then
+            game.Players.LocalPlayer:Kick("Moderator joined the game.")
+        end
+    end
+end
+
+-- Function to enable the anti-ban
+local function enableAntiBan()
+    enabled = true
+    game.StarterGui:SetCore("ChatMakeSystemMessage", {Text = "The Full Anti Ban Has Been Enabled, Looking For Admins If They Join"; Color = Color3.new(1, 0, 0); Font = Enum.Font.SourceSansBold; TextSize = 18})
+    
+    -- Continuously check for moderators every second
+    spawn(function()
+        while enabled do
+            checkForModerators()
+            wait(1)
+        end
+    end)
+
+    -- Listen for AdminDino event
+    local gameEvents = game.Workspace:FindFirstChild("GameEvents")
+    if gameEvents then
+        local adminDinoEvent = gameEvents:FindFirstChild("AdminDino")
+        if adminDinoEvent then
+            adminDinoEvent.OnServerEvent:Connect(function()
+                game.Players.LocalPlayer:Kick("Admin detected in the game.")
+            end)
+        end
+    end
+end
+
+-- Ensure anti-ban remains enabled even if the player respawns or engages in PvP
+game.Players.LocalPlayer.CharacterAdded:Connect(function(character)
+    if enabled then
+        enableAntiBan()
+    end
+end)
+
+-- Button to activate anti-ban
+AutoFarmTab:AddButton({
+    Name = "ANTI BAN",
+    Callback = function()
+        if not enabled then
+            enableAntiBan()
+        else
+            game.StarterGui:SetCore("ChatMakeSystemMessage", {Text = "The Anti Ban Is Already Activated"; Color = Color3.new(1, 0, 0); Font = Enum.Font.SourceSansBold; TextSize = 18})
+        end
+    end
+})
 -- Initialize the library
 OrionLib:Init()
 
@@ -219,7 +265,7 @@ local function stopHungerLoop()
 end
 
 AutoFarmTab:AddToggle({
-    Name = "Comida E Água Infinita PVP",
+    Name = "Infinite Food And Water(PVP)",
     Default = false,
     Callback = function(Value)
         if Value then
@@ -256,7 +302,7 @@ local function stopWaterInvisible()
 end
 
 AutoFarmTab:AddToggle({
-    Name = "Melhor Visibilidade Sobre A Agua (PVP)",
+    Name = "Remove The Water And See Inside It (PVP)",
     Default = false,
     Callback = function(Value)
         if Value then
@@ -271,56 +317,14 @@ local player = game.Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 
--- Create a larger platform behind the map at the given coordinates
+-- Create platform for Auto Farm (Argentinosaurus)
 local platformArgen = Instance.new("Part")
-platformArgen.Size = Vector3.new(200, 1, 200) -- Increased size for bigger dinosaurs
+platformArgen.Size = Vector3.new(50, 1, 50) -- Smaller size for Auto Farm Argen
 platformArgen.Anchored = true
-platformArgen.Position = Vector3.new(2600, 803, 1949) -- New position for Auto Farm Argen
+platformArgen.Position = Vector3.new(-7056, 5183, 5248) -- New position for Auto Farm Argen
 platformArgen.Parent = workspace
 
-local platformElder = Instance.new("Part")
-platformElder.Size = Vector3.new(200, 1, 200) -- Increased size for smaller dinosaurs
-platformElder.Anchored = true
-platformElder.Position = Vector3.new(2297, 1158, 1797) -- Standard position for Auto Elder
-platformElder.Parent = workspace
-
 local autoFarmEnabled = false
-local autoElderEnabled = false
-local autoFoodAndWaterEnabled = false
-
--- Define the regions with their coordinates
-local regions = {
-    ["Ghastly Ruins"] = Vector3.new(-1192, 334, 362),
-    Graveyard = Vector3.new(-1942, 182, -403),
-    ["Haunted Forest"] = Vector3.new(139, 168, -1428),
-    LakeStomach = Vector3.new(-1006, 252, -1288),
-    ["Manor Of Souls"] = Vector3.new(225, 298, -914),
-    ["Pumpking Field"] = Vector3.new(-289, 181, -458),
-    Spookiville = Vector3.new(-2022, 188, 616)
-}
-
--- Function to get the current bonus region
-local function getCurrentBonusRegion()
-    for regionName, _ in pairs(regions) do
-        local region = workspace:FindFirstChild(regionName)
-        if region and region:FindFirstChild("BonusActive") then
-            return regionName
-        end
-    end
-    return "Wilderness"
-end
-
--- Function to check and update region bonus
-local function updateRegionBonus()
-    while autoFarmEnabled or autoElderEnabled do
-        local currentBonusRegion = getCurrentBonusRegion()
-        if currentBonusRegion ~= "Wilderness" then
-            local currentPosition = regions[currentBonusRegion]
-            humanoidRootPart.CFrame = CFrame.new(currentPosition)
-        end
-        wait(900) -- Wait for the duration of the region bonus
-    end
-end
 
 -- Function to make all parts of the character non-collidable
 local function setCharacterNonCollidable(collide)
@@ -347,7 +351,8 @@ local function floatToPlatform(force, damping, speed, platform)
     bodyGyro.P = speed
     bodyGyro.Parent = humanoidRootPart
 
-    setCharacterNonCollidable(false) -- Make character non-collidable
+    -- Enable noclip
+    setCharacterNonCollidable(false)
 
     humanoidRootPart.Anchored = true
     wait(1)
@@ -374,7 +379,7 @@ end
 
 -- Start interval to add thirst and food every 2 seconds
 local function startFoodAndWater()
-    while autoFoodAndWaterEnabled do
+    while autoFarmEnabled do
         addThirst()
         addFood()
         wait(2)
@@ -386,33 +391,16 @@ local function onCharacterAdded(newCharacter)
     character = newCharacter
     humanoidRootPart = character:WaitForChild("HumanoidRootPart")
     if autoFarmEnabled then
-        floatToPlatform(300000000, 500, 8000, platformArgen) -- Massive force and speed for Auto Farm Argen
-    elseif autoElderEnabled then
-        floatToPlatform(1000000, 500, 5000, platformElder) -- Increased force and smooth speed for Auto Elder
+        floatToPlatform(500000000, 500, 12000, platformArgen) -- Significantly increased force and speed for Auto Farm Argen
     end
 end
 
--- Toggle callback functions
+-- Toggle callback function
 local function onAutoFarmToggle(value)
     autoFarmEnabled = value
     if autoFarmEnabled then
-        floatToPlatform(300000000, 500, 8000, platformArgen)
-        updateRegionBonus() -- Start updating region bonus
-    end
-end
-
-local function onAutoElderToggle(value)
-    autoElderEnabled = value
-    if autoElderEnabled then
-        floatToPlatform(1000000, 500, 5000, platformElder)
-        updateRegionBonus() -- Start updating region bonus
-    end
-end
-
-local function onAutoFoodAndWaterToggle(value)
-    autoFoodAndWaterEnabled = value
-    if autoFoodAndWaterEnabled then
-        startFoodAndWater()
+        floatToPlatform(500000000, 500, 12000, platformArgen)
+        startFoodAndWater() -- Start adding food and water
     end
 end
 
@@ -424,46 +412,28 @@ character.ChildAdded:Connect(function(child)
     if child:IsA("Humanoid") then
         child:GetPropertyChangedSignal("Health"):Connect(function()
             if autoFarmEnabled and child.Health > 0 then
-                floatToPlatform(300000000, 500, 8000, platformArgen)
-            elseif autoElderEnabled and child.Health > 0 then
-                floatToPlatform(1000000, 500, 5000, platformElder)
+                floatToPlatform(500000000, 500, 12000, platformArgen)
             end
         end)
     end
 end)
 
 -- Re-apply float to platform every few seconds to handle growth stages
-while autoFarmEnabled or autoElderEnabled do
-    if autoFarmEnabled then
-        floatToPlatform(300000000, 500, 8000, platformArgen)
-    elseif autoElderEnabled then
-        floatToPlatform(1000000, 500, 5000, platformElder)
+spawn(function()
+    while true do
+        if autoFarmEnabled then
+            floatToPlatform(500000000, 500, 12000, platformArgen)
+        end
+        wait(5) -- Re-apply every 5 seconds
     end
-    wait(5) -- Re-apply every 5 seconds
-end
+end)
 
--- Add the toggles to the UI
+-- Add the toggle to the UI
 AutoFarmTab:AddToggle({
     Name = "Auto Farm (Argentinosaurus)",
     Default = false,
     Callback = function(value)
         onAutoFarmToggle(value)
-    end
-})
-
-AutoFarmTab:AddToggle({
-    Name = "Auto Elder",
-    Default = false,
-    Callback = function(value)
-        onAutoElderToggle(value)
-    end
-})
-
-AutoFarmTab:AddToggle({
-    Name = "Comida E Agua Automatico (Farm)",
-    Default = false,
-    Callback = function(value)
-        onAutoFoodAndWaterToggle(value)
     end
 })
 
@@ -535,13 +505,13 @@ local Tab = Window:MakeTab({
 })
 
 local Section1 = Tab:AddSection({
-    Name = "Jogar Com Uma Skin Ou Dino"
+    Name = "Play With Skin Ur Dino"
 })
 
 local dinosaurName
 
 Section1:AddTextbox({
-    Name = "Nome Do Dino/Skin",
+    Name = "Name Of The Dino/Skin",
     Default = "",
     TextDisappear = false,
     Callback = function(value)
@@ -550,7 +520,7 @@ Section1:AddTextbox({
 })
 
 Section1:AddButton({
-    Name = "Spawnar",
+    Name = "Spawn",
     Callback = function()
         if dinosaurName then
             spawnDinosaurOrSkin(dinosaurName)
@@ -567,7 +537,7 @@ local Section2 = Tab:AddSection({
 local itemName
 
 Section2:AddTextbox({
-    Name = "Nome Do Dino/Skin",
+    Name = "Name of The Dino/Skin",
     Default = "",
     TextDisappear = false,
     Callback = function(value)
@@ -576,12 +546,134 @@ Section2:AddTextbox({
 })
 
 Section2:AddButton({
-    Name = "Comprar Skin/Dino",
+    Name = "Buy Dino Ur Skin",
     Callback = function()
         if itemName then
             buyItem(itemName)
         else
-            print("Coloque O Nome Do Dino/Skin Aqui!.")
+            print("Put The Name Of The Dinosaur/Skin Here!.")
+        end
+    end
+})
+
+local player = game.Players.LocalPlayer
+local vehicleFlySpeed = 50 -- Default fly speed
+local flying = false
+local vehicleGyro = nil
+local vehicleVelocity = nil
+
+-- Function to enable or disable flying
+local function setFly(enabled)
+    if enabled then
+        flying = true
+        local character = player.Character or player.CharacterAdded:Wait()
+        local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+        
+        -- Create BodyGyro and BodyVelocity
+        vehicleGyro = Instance.new("BodyGyro")
+        vehicleGyro.P = 9e4
+        vehicleGyro.Parent = humanoidRootPart
+
+        vehicleVelocity = Instance.new("BodyVelocity")
+        vehicleVelocity.Velocity = Vector3.new(0, 0, 0)
+        vehicleVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+        vehicleVelocity.Parent = humanoidRootPart
+
+        -- Determine if the player is on a mobile device
+        local isMobile = game.UserInputService.TouchEnabled and not game.UserInputService.KeyboardEnabled
+        
+        -- Flying loop
+        local flyLoop
+        flyLoop = game:GetService("RunService").Stepped:Connect(function()
+            if not flying then flyLoop:Disconnect() return end
+            -- Stay still by default
+            vehicleVelocity.Velocity = Vector3.new(0, 0, 0)
+            if isMobile then
+                -- Mobile controls for flying
+                local moveDirection = game.UserInputService:GetDeviceRotation()
+                vehicleVelocity.Velocity = moveDirection.LookVector * vehicleFlySpeed
+            else
+                -- Keyboard controls for flying
+                if game.UserInputService:IsKeyDown(Enum.KeyCode.W) then
+                    vehicleVelocity.Velocity = workspace.CurrentCamera.CFrame.LookVector * vehicleFlySpeed
+                elseif game.UserInputService:IsKeyDown(Enum.KeyCode.S) then
+                    vehicleVelocity.Velocity = -workspace.CurrentCamera.CFrame.LookVector * vehicleFlySpeed
+                elseif game.UserInputService:IsKeyDown(Enum.KeyCode.A) then
+                    vehicleVelocity.Velocity = -workspace.CurrentCamera.CFrame.RightVector * vehicleFlySpeed
+                elseif game.UserInputService:IsKeyDown(Enum.KeyCode.D) then
+                    vehicleVelocity.Velocity = workspace.CurrentCamera.CFrame.RightVector * vehicleFlySpeed
+                elseif game.UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+                    vehicleVelocity.Velocity = Vector3.new(0, vehicleFlySpeed, 0)
+                elseif game.UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+                    vehicleVelocity.Velocity = Vector3.new(0, -vehicleFlySpeed, 0)
+                end
+            end
+            vehicleGyro.CFrame = workspace.CurrentCamera.CFrame
+        end)
+    else
+        flying = false
+        if vehicleGyro then
+            vehicleGyro:Destroy()
+            vehicleGyro = nil
+        end
+        if vehicleVelocity then
+            vehicleVelocity:Destroy()
+            vehicleVelocity = nil
+        end
+    end
+end
+
+-- Create the UI toggle
+PlayerTab:AddToggle({
+    Name = "Dinosaur Fly",
+    Default = false,
+    Callback = function(value)
+        setFly(value)
+    end
+})
+
+-- Function to update fly speed
+local function updateFlySpeed(newSpeed)
+    vehicleFlySpeed = newSpeed
+end
+
+-- Example usage of updating fly speed through a command
+PlayerTab:AddTextbox({
+    Name = "Dinosaur Fly Speed",
+    Default = "50",
+    TextDisappear = true,
+    Callback = function(value)
+        local speed = tonumber(value)
+        if speed then
+            updateFlySpeed(speed)
+        end
+    end
+})
+
+local healEnabled = false
+
+-- Function to heal the dinosaur/player
+local function healDinosaur()
+    while healEnabled do
+        local character = game.Players.LocalPlayer.Character
+        if character and character:FindFirstChildOfClass("Humanoid") then
+            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            if humanoid.Health < humanoid.MaxHealth then
+                humanoid.Health = humanoid.Health + 200 -- Adjust the healing amount as needed
+            end
+        end
+        wait(1) -- Adjust the interval as needed
+    end
+end
+
+-- Toggle to enable or disable auto heal
+PlayerTab:AddToggle({
+    Name = "Auto Heal",
+    Default = false,
+    Callback = function(value)
+        healEnabled = value
+        if healEnabled then
+            spawn(healDinosaur)
         end
     end
 })
