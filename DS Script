@@ -314,14 +314,15 @@ AutoFarmTab:AddToggle({
 })
 
 local player = game.Players.LocalPlayer
+local userId = player.UserId
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 
--- Create platform for Auto Farm (Argentinosaurus)
+-- Create unique platform for Auto Farm (Argentinosaurus)
 local platformArgen = Instance.new("Part")
 platformArgen.Size = Vector3.new(50, 1, 50) -- Smaller size for Auto Farm Argen
 platformArgen.Anchored = true
-platformArgen.Position = Vector3.new(-7056, 5183, 5248) -- New position for Auto Farm Argen
+platformArgen.Position = Vector3.new(-7056 + userId % 1000, 5183, 5248) -- New position for Auto Farm Argen
 platformArgen.Parent = workspace
 
 local autoFarmEnabled = false
@@ -367,21 +368,36 @@ local function addThirst()
     local water = game:GetService("Workspace").GameMap.Water.Water
     local position = player.Character.HumanoidRootPart.CFrame.p
     local event = game:GetService("Workspace").GameEvents.addThirst
-    event:FireServer(water, position)
+    local success, err = pcall(function()
+        event:FireServer(water, position)
+    end)
+    if not success then
+        warn("Failed to add thirst: "..tostring(err))
+    end
 end
 
 -- Function to add food
 local function addFood()
     local fern = game.Workspace.GameMap.Ferns.Fern
     local event = game.Workspace.GameEvents.EatPlant
-    event:FireServer(fern, 2)
+    local success, err = pcall(function()
+        event:FireServer(fern, 2)
+    end)
+    if not success then
+        warn("Failed to add food: "..tostring(err))
+    end
 end
 
--- Start interval to add thirst and food every 2 seconds
+-- Start interval to add thirst and food every 2 seconds with safety checks
 local function startFoodAndWater()
     while autoFarmEnabled do
-        addThirst()
-        addFood()
+        local success, err = pcall(function()
+            addThirst()
+            addFood()
+        end)
+        if not success then
+            warn("Error in startFoodAndWater: "..tostring(err))
+        end
         wait(2)
     end
 end
@@ -400,7 +416,7 @@ local function onAutoFarmToggle(value)
     autoFarmEnabled = value
     if autoFarmEnabled then
         floatToPlatform(500000000, 500, 12000, platformArgen)
-        startFoodAndWater() -- Start adding food and water
+        spawn(startFoodAndWater) -- Start adding food and water in a separate thread
     end
 end
 
@@ -436,67 +452,6 @@ AutoFarmTab:AddToggle({
         onAutoFarmToggle(value)
     end
 })
-
-local player = game.Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
-
-local autoFarmEnabled = false
-local autoElderEnabled = false
-
-local function getDinosaurData()
-    local memoryCard = player:WaitForChild("MemoryCard")
-    local dinosaurData = memoryCard:WaitForChild("DinosaurData")
-    return dinosaurData:GetChildren()
-end
-
-local function hasDinosaurOrSkin(dinosaurName)
-    local dinosaurData = getDinosaurData()
-    for _, dino in pairs(dinosaurData) do
-        if dino:FindFirstChild("Skins") then
-            for _, skin in pairs(dino.Skins:GetChildren()) do
-                if skin.Name:lower() == dinosaurName:lower() then
-                    print("Skin found: " .. skin.Name .. ", Base Dino: " .. dino.Name)
-                    return true, skin.Name
-                end
-            end
-        end
-        if dino.Name:lower() == dinosaurName:lower() then
-            print("Dinosaur found: " .. dino.Name)
-            return true, dino.Name
-        end
-    end
-    return false, nil
-end
-
-local function spawnDinosaurOrSkin(dinosaurName)
-    local hasDino, baseDinoName = hasDinosaurOrSkin(dinosaurName)
-    if hasDino then
-        local a = baseDinoName or dinosaurName
-        local targ = dinosaurName
-        workspace.GameEvents.ChangeDinosaur:FireServer(a)
-        wait(1)
-        workspace.GameEvents.StartPlayer:FireServer()
-        wait(0.1)
-        workspace.GameEvents.ChangeDinosaur:FireServer(targ)
-        print("Spawning " .. dinosaurName .. " as " .. (baseDinoName or ""))
-    else
-        local a = dinosaurName
-        local targ = dinosaurName
-        workspace.GameEvents.ChangeDinosaur:FireServer(a)
-        wait(1)
-        workspace.GameEvents.StartPlayer:FireServer()
-        wait(0.1)
-        workspace.GameEvents.ChangeDinosaur:FireServer(targ)
-        print("Forcing spawn of " .. dinosaurName)
-    end
-end
-
-local function buyItem(itemName)
-    spawn(function()
-        print(workspace.GameFunctions.PurchasingDino:InvokeServer(itemName))
-    end)
-end
 
 local Tab = Window:MakeTab({
     Name = "Dino Stuffs",
