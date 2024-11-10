@@ -453,64 +453,6 @@ AutoFarmTab:AddToggle({
     end
 })
 
-local Tab = Window:MakeTab({
-    Name = "Dino Stuffs",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
-})
-
-local Section1 = Tab:AddSection({
-    Name = "Play With Skin Ur Dino"
-})
-
-local dinosaurName
-
-Section1:AddTextbox({
-    Name = "Name Of The Dino/Skin",
-    Default = "",
-    TextDisappear = false,
-    Callback = function(value)
-        dinosaurName = value
-    end
-})
-
-Section1:AddButton({
-    Name = "Spawn",
-    Callback = function()
-        if dinosaurName then
-            spawnDinosaurOrSkin(dinosaurName)
-        else
-            print("Please enter the dinosaur name.")
-        end
-    end
-})
-
-local Section2 = Tab:AddSection({
-    Name = "Compra Skin Ou Dinossauros"
-})
-
-local itemName
-
-Section2:AddTextbox({
-    Name = "Name of The Dino/Skin",
-    Default = "",
-    TextDisappear = false,
-    Callback = function(value)
-        itemName = value
-    end
-})
-
-Section2:AddButton({
-    Name = "Buy Dino Ur Skin",
-    Callback = function()
-        if itemName then
-            buyItem(itemName)
-        else
-            print("Put The Name Of The Dinosaur/Skin Here!.")
-        end
-    end
-})
-
 local player = game.Players.LocalPlayer
 local vehicleFlySpeed = 50 -- Default fly speed
 local flying = false
@@ -605,30 +547,367 @@ PlayerTab:AddTextbox({
     end
 })
 
-local healEnabled = false
+local giveHungerEnabled = false
 
--- Function to heal the dinosaur/player
-local function healDinosaur()
-    while healEnabled do
-        local character = game.Players.LocalPlayer.Character
-        if character and character:FindFirstChildOfClass("Humanoid") then
-            local humanoid = character:FindFirstChildOfClass("Humanoid")
-            if humanoid.Health < humanoid.MaxHealth then
-                humanoid.Health = humanoid.Health + 200 -- Adjust the healing amount as needed
-            end
-        end
-        wait(1) -- Adjust the interval as needed
+-- Function to manage hunger loop
+local function HungerLoop()
+    while giveHungerEnabled do
+        wait(0.1)
+        game.Workspace.GameEvents.EatPlant:FireServer(game.Workspace.GameMap.Ferns.Fern, 10) -- Increase hunger
+        local A_1 = game:GetService("Workspace").GameMap.Water.Water
+        local A_2 = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame.p
+        local Event = game:GetService("Workspace").GameEvents.addThirst
+        Event:FireServer(A_1, A_2) -- Give water
     end
 end
 
--- Toggle to enable or disable auto heal
+local function startHungerLoop()
+    if not giveHungerEnabled then
+        giveHungerEnabled = true
+        spawn(HungerLoop)
+    end
+end
+
+local function stopHungerLoop()
+    giveHungerEnabled = false
+end
+
+-- Toggle to enable or disable gaining hunger
 PlayerTab:AddToggle({
-    Name = "Auto Heal",
+    Name = "Gain Hunger",
     Default = false,
     Callback = function(value)
-        healEnabled = value
-        if healEnabled then
-            spawn(healDinosaur)
+        if value then
+            startHungerLoop()
+        else
+            stopHungerLoop()
+        end
+    end
+})
+
+local loseHungerEnabled = false
+
+-- Function to reduce hunger
+local function reduceHunger()
+    while loseHungerEnabled do
+        game.Workspace.GameEvents.EatPlant:FireServer(game.Workspace.GameMap.Ferns.Fern, -10)
+        wait(0.1) -- Short wait to prevent overloading the game
+    end
+end
+
+local function startLoseHungerLoop()
+    if not loseHungerEnabled then
+        loseHungerEnabled = true
+        spawn(reduceHunger)
+    end
+end
+
+local function stopLoseHungerLoop()
+    loseHungerEnabled = false
+end
+
+-- Toggle to enable or disable losing hunger
+PlayerTab:AddToggle({
+    Name = "Gain Hp",
+    Default = false,
+    Callback = function(value)
+        if value then
+            startLoseHungerLoop()
+        else
+            stopLoseHungerLoop()
+        end
+    end
+})
+
+local player = game.Players.LocalPlayer
+local userId = player.UserId
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+local autoElderEnabled = false
+local floating = false
+local vehicleGyro, vehicleVelocity
+local vehicleFloatSpeed = 0.1 -- Default reduced speed for smoother floating
+local floatForce = 50000000 -- Medium float force
+
+-- Function to enable noclip
+local function enableNoclip()
+    for _, part in pairs(character:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = false
+        end
+    end
+end
+
+-- Function to disable noclip
+local function disableNoclip()
+    for _, part in pairs(character:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = true
+        end
+    end
+end
+
+-- Create platform at specified position for Auto Elder
+local function createPlatform()
+    local workspace = game:GetService("Workspace")
+
+    -- Platform for Auto Elder
+    local platformElder = Instance.new("Part")
+    platformElder.Size = Vector3.new(200, 1, 200)
+    platformElder.Anchored = true
+    platformElder.Position = Vector3.new(-5204, 929, -1873)
+    platformElder.BrickColor = BrickColor.new("Bright red")
+    platformElder.Parent = workspace
+end
+
+-- Function to float the player smoothly to the platform using BodyPosition and BodyGyro
+local function floatToPlatform()
+    local targetPosition = Vector3.new(-5204, 929, -1873) + Vector3.new(0, 5, 0)
+    local bodyPosition = Instance.new("BodyPosition")
+    bodyPosition.Position = targetPosition
+    bodyPosition.MaxForce = Vector3.new(floatForce, floatForce, floatForce)
+    bodyPosition.D = 500 -- Damping
+    bodyPosition.P = vehicleFloatSpeed -- Speed
+    bodyPosition.Parent = humanoidRootPart
+
+    local bodyGyro = Instance.new("BodyGyro")
+    bodyGyro.CFrame = humanoidRootPart.CFrame
+    bodyGyro.MaxTorque = Vector3.new(floatForce, floatForce, floatForce)
+    bodyGyro.P = vehicleFloatSpeed -- Speed
+    bodyGyro.Parent = humanoidRootPart
+
+    -- Enable noclip
+    enableNoclip()
+
+    humanoidRootPart.Anchored = true
+    wait(1)
+    humanoidRootPart.Anchored = false
+
+    wait(5) -- Keep non-collidable for a while
+    disableNoclip() -- Restore collision
+end
+
+-- Function to add thirst
+local function addThirst()
+    local water = game:GetService("Workspace").GameMap.Water.Water
+    local position = player.Character.HumanoidRootPart.CFrame.p
+    local event = game:GetService("Workspace").GameEvents.addThirst
+    local success, err = pcall(function()
+        event:FireServer(water, position)
+    end)
+    if not success then
+        warn("Failed to add thirst: "..tostring(err))
+    end
+end
+
+-- Function to add food
+local function addFood()
+    local fern = game.Workspace.GameMap.Ferns.Fern
+    local event = game.Workspace.GameEvents.EatPlant
+    local success, err = pcall(function()
+        event:FireServer(fern, 2)
+    end)
+    if not success then
+        warn("Failed to add food: "..tostring(err))
+    end
+end
+
+-- Start interval to add thirst and food every 2 seconds with safety checks
+local function startFoodAndWater()
+    while autoElderEnabled do
+        local success, err = pcall(function()
+            addThirst()
+            addFood()
+        end)
+        if not success then
+            warn("Error in startFoodAndWater: "..tostring(err))
+        end
+        wait(2)
+    end
+end
+
+-- Function to handle character respawn or growth
+local function onCharacterAdded(newCharacter)
+    character = newCharacter
+    humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+    if autoElderEnabled then
+        floatToPlatform()
+    end
+end
+
+-- Toggle callback function for Auto Elder
+local function onAutoElderToggle(value)
+    autoElderEnabled = value
+    if autoElderEnabled then
+        floatToPlatform()
+        spawn(startFoodAndWater) -- Start adding food and water in a separate thread
+    end
+end
+
+-- Connect the character added event to handle respawn and growth
+player.CharacterAdded:Connect(onCharacterAdded)
+
+-- Ensure the player floats to the respective platform whenever they spawn or grow
+character.ChildAdded:Connect(function(child)
+    if child:IsA("Humanoid") then
+        child:GetPropertyChangedSignal("Health"):Connect(function()
+            if autoElderEnabled and child.Health > 0 then
+                floatToPlatform()
+            end
+        end)
+    end
+end)
+
+-- Re-apply float to platform every few seconds to handle growth stages
+spawn(function()
+    while true do
+        if autoElderEnabled then
+            floatToPlatform()
+        end
+        wait(5) -- Re-apply every 5 seconds
+    end
+end)
+
+-- Add the Auto Elder toggle to the UI
+AutoFarmTab:AddToggle({
+    Name = "Auto Elder",
+    Default = false,
+    Callback = function(value)
+        onAutoElderToggle(value)
+    end
+})
+
+-- Add the Float Speed input to the UI
+AutoFarmTab:AddTextbox({
+    Name = "Float Speed",
+    Default = "0.1",
+    TextDisappear = false,
+    Callback = function(value)
+        local speed = tonumber(value)
+        if speed then
+            vehicleFloatSpeed = speed
+        else
+            print("Invalid input. Please enter a number.")
+        end
+    end
+})
+
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+local autoFarmEnabled = false
+local autoElderEnabled = false
+
+local function getDinosaurData()
+    local memoryCard = player:WaitForChild("MemoryCard")
+    local dinosaurData = memoryCard:WaitForChild("DinosaurData")
+    return dinosaurData:GetChildren()
+end
+
+local function hasDinosaurOrSkin(dinosaurName)
+    local dinosaurData = getDinosaurData()
+    for _, dino in pairs(dinosaurData) do
+        if dino:FindFirstChild("Skins") then
+            for _, skin in pairs(dino.Skins:GetChildren()) do
+                if skin.Name:lower() == dinosaurName:lower() then
+                    print("Skin found: " .. skin.Name .. ", Base Dino: " .. dino.Name)
+                    return true, skin.Name
+                end
+            end
+        end
+        if dino.Name:lower() == dinosaurName:lower() then
+            print("Dinosaur found: " .. dino.Name)
+            return true, dino.Name
+        end
+    end
+    return false, nil
+end
+
+local function spawnDinosaurOrSkin(dinosaurName)
+    local hasDino, baseDinoName = hasDinosaurOrSkin(dinosaurName)
+    if hasDino then
+        local a = baseDinoName or dinosaurName
+        local targ = dinosaurName
+        workspace.GameEvents.ChangeDinosaur:FireServer(a)
+        wait(1)
+        workspace.GameEvents.StartPlayer:FireServer()
+        wait(0.1)
+        workspace.GameEvents.ChangeDinosaur:FireServer(targ)
+        print("Spawning " .. dinosaurName .. " as " .. (baseDinoName or ""))
+    else
+        local a = dinosaurName
+        local targ = dinosaurName
+        workspace.GameEvents.ChangeDinosaur:FireServer(a)
+        wait(1)
+        workspace.GameEvents.StartPlayer:FireServer()
+        wait(0.1)
+        workspace.GameEvents.ChangeDinosaur:FireServer(targ)
+        print("Forcing spawn of " .. dinosaurName)
+    end
+end
+
+local function buyItem(itemName)
+    spawn(function()
+        print(workspace.GameFunctions.PurchasingDino:InvokeServer(itemName))
+    end)
+end
+
+local Tab = Window:MakeTab({
+    Name = "Dino Stuffs",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+local Section1 = Tab:AddSection({
+    Name = "Play With Dinosaur Skin"
+})
+
+local dinosaurName
+
+Section1:AddTextbox({
+    Name = "Name Of The Dinosaur Ur Skin Here",
+    Default = "",
+    TextDisappear = false,
+    Callback = function(value)
+        dinosaurName = value
+    end
+})
+
+Section1:AddButton({
+    Name = "Spawn",
+    Callback = function()
+        if dinosaurName then
+            spawnDinosaurOrSkin(dinosaurName)
+        else
+            print("Please enter the dinosaur name.")
+        end
+    end
+})
+
+local Section2 = Tab:AddSection({
+    Name = "Buy Skin Ur Dinosaurs"
+})
+
+local itemName
+
+Section2:AddTextbox({
+    Name = "Name Of The Dinosaur Ur Skin",
+    Default = "",
+    TextDisappear = false,
+    Callback = function(value)
+        itemName = value
+    end
+})
+
+Section2:AddButton({
+    Name = "Buy Skin Ur Dinosaur",
+    Callback = function()
+        if itemName then
+            buyItem(itemName)
+        else
+            print("Name Of Dinosaur Ur Skin!.")
         end
     end
 })
