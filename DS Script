@@ -322,7 +322,7 @@ local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 local platformArgen = Instance.new("Part")
 platformArgen.Size = Vector3.new(50, 1, 50) -- Smaller size for Auto Farm Argen
 platformArgen.Anchored = true
-platformArgen.Position = Vector3.new(-7056 + userId % 1000, 5183, 5248) -- New position for Auto Farm Argen
+platformArgen.Position = Vector3.new(-4694, 3789, 3313) -- New position for Auto Farm Argen
 platformArgen.Parent = workspace
 
 local autoFarmEnabled = false
@@ -628,7 +628,7 @@ local autoElderEnabled = false
 local floating = false
 local vehicleGyro, vehicleVelocity
 local vehicleFloatSpeed = 0.1 -- Default reduced speed for smoother floating
-local floatForce = 50000000 -- Medium float force
+local floatForce = 500000 -- Medium float force
 
 -- Function to enable noclip
 local function enableNoclip()
@@ -656,14 +656,14 @@ local function createPlatform()
     local platformElder = Instance.new("Part")
     platformElder.Size = Vector3.new(200, 1, 200)
     platformElder.Anchored = true
-    platformElder.Position = Vector3.new(-5204, 929, -1873)
+    platformElder.Position = Vector3.new(-778, 1313, -866)
     platformElder.BrickColor = BrickColor.new("Bright red")
     platformElder.Parent = workspace
 end
 
 -- Function to float the player smoothly to the platform using BodyPosition and BodyGyro
 local function floatToPlatform()
-    local targetPosition = Vector3.new(-5204, 929, -1873) + Vector3.new(0, 5, 0)
+    local targetPosition = Vector3.new(-778, 1313, -866) + Vector3.new(0, 5, 0)
     local bodyPosition = Instance.new("BodyPosition")
     bodyPosition.Position = targetPosition
     bodyPosition.MaxForce = Vector3.new(floatForce, floatForce, floatForce)
