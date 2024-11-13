@@ -326,6 +326,7 @@ platformArgen.Position = Vector3.new(-4694, 3789, 3313) -- New position for Auto
 platformArgen.Parent = workspace
 
 local autoFarmEnabled = false
+local antiAFKEnabled = false -- Initial state of the anti-AFK
 
 -- Function to make all parts of the character non-collidable
 local function setCharacterNonCollidable(collide)
@@ -402,6 +403,19 @@ local function startFoodAndWater()
     end
 end
 
+-- Function to prevent AFK kick
+local function antiAFK()
+    while antiAFKEnabled do
+        local VirtualUser = game:service('VirtualUser')
+        player.Idled:connect(function()
+            VirtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+            wait(1)
+            VirtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+        end)
+        wait(10) -- Adjust the wait time as necessary
+    end
+end
+
 -- Function to handle character respawn or growth
 local function onCharacterAdded(newCharacter)
     character = newCharacter
@@ -414,9 +428,13 @@ end
 -- Toggle callback function
 local function onAutoFarmToggle(value)
     autoFarmEnabled = value
+    antiAFKEnabled = value
     if autoFarmEnabled then
         floatToPlatform(500000000, 500, 12000, platformArgen)
         spawn(startFoodAndWater) -- Start adding food and water in a separate thread
+        spawn(antiAFK) -- Start anti-AFK
+    else
+        antiAFKEnabled = false -- Stop anti-AFK
     end
 end
 
@@ -628,7 +646,8 @@ local autoElderEnabled = false
 local floating = false
 local vehicleGyro, vehicleVelocity
 local vehicleFloatSpeed = 0.1 -- Default reduced speed for smoother floating
-local floatForce = 500000 -- Medium float force
+local floatForce = 50000000 -- Medium float force
+local antiAFKEnabled = false -- Initial state of the anti-AFK
 
 -- Function to enable noclip
 local function enableNoclip()
@@ -727,6 +746,19 @@ local function startFoodAndWater()
     end
 end
 
+-- Function to prevent AFK kick
+local function antiAFK()
+    while antiAFKEnabled do
+        local VirtualUser = game:service('VirtualUser')
+        player.Idled:connect(function()
+            VirtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+            wait(1)
+            VirtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+        end)
+        wait(10) -- Adjust the wait time as necessary
+    end
+end
+
 -- Function to handle character respawn or growth
 local function onCharacterAdded(newCharacter)
     character = newCharacter
@@ -739,9 +771,13 @@ end
 -- Toggle callback function for Auto Elder
 local function onAutoElderToggle(value)
     autoElderEnabled = value
+    antiAFKEnabled = value
     if autoElderEnabled then
         floatToPlatform()
         spawn(startFoodAndWater) -- Start adding food and water in a separate thread
+        spawn(antiAFK) -- Start anti-AFK
+    else
+        antiAFKEnabled = false -- Stop anti-AFK
     end
 end
 
