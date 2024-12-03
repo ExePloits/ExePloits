@@ -64,136 +64,6 @@ Image = <string> - The icon of the notification.
 Time = <number> - The duration of the notfication.
 ]]
 
-local espEnabled = false
-
--- Function to create ESP highlights and labels
-local function createESP(character)
-    if not character:FindFirstChildOfClass("Humanoid") then return end
-    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso") -- Cover different possible root parts
-
-    if humanoidRootPart then
-        -- Create Highlight
-        local highlight = Instance.new("Highlight")
-        highlight.Adornee = character
-        highlight.FillColor = Color3.new(0, 1, 0) -- Green color for highlight
-        highlight.OutlineColor = Color3.new(1, 1, 1) -- White color for outline
-        highlight.Parent = character
-
-        -- Create BillboardGui for displaying information
-        local billboard = Instance.new("BillboardGui")
-        billboard.Adornee = humanoidRootPart
-        billboard.Size = UDim2.new(4, 0, 1, 0)
-        billboard.StudsOffset = Vector3.new(0, 3, 0)
-        billboard.AlwaysOnTop = true
-        billboard.Parent = character
-
-        -- Create TextLabel for name
-        local nameLabel = Instance.new("TextLabel")
-        nameLabel.Size = UDim2.new(1, 0, 0.5, 0)
-        nameLabel.Text = character.Name
-        nameLabel.TextColor3 = Color3.new(1, 0, 0) -- Red color for name
-        nameLabel.BackgroundTransparency = 1
-        nameLabel.TextStrokeTransparency = 0
-        nameLabel.Parent = billboard
-
-        -- Create TextLabel for health and distance
-        local infoLabel = Instance.new("TextLabel")
-        infoLabel.Size = UDim2.new(1, 0, 0.5, 0)
-        infoLabel.Position = UDim2.new(0, 0, 0.5, 0)
-        infoLabel.TextColor3 = Color3.new(0, 1, 0) -- Green color for info
-        infoLabel.BackgroundTransparency = 1
-        infoLabel.TextStrokeTransparency = 0
-        infoLabel.Parent = billboard
-
-        -- Update health and distance information
-        local function updateInfo()
-            if character and humanoidRootPart then
-                local health = character:FindFirstChildOfClass("Humanoid").Health
-                local distance = math.floor((game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart").Position - humanoidRootPart.Position).Magnitude)
-                infoLabel.Text = "Health: " .. health .. " | Studs: " .. distance
-            end
-        end
-
-        -- Connect health change to update info
-        character:FindFirstChildOfClass("Humanoid"):GetPropertyChangedSignal("Health"):Connect(updateInfo)
-
-        -- Initial info update
-        updateInfo()
-    end
-end
-
--- Function to remove ESP highlights and labels
-local function removeESP(character)
-    if character:FindFirstChild("Highlight") then
-        character.Highlight:Destroy()
-    end
-    if character:FindFirstChild("BillboardGui") then
-        character.BillboardGui:Destroy()
-    end
-end
-
--- Function to handle character added
-local function onCharacterAdded(character)
-    if espEnabled then
-        createESP(character)
-    end
-end
-
--- Function to handle player added
-local function onPlayerAdded(player)
-    player.CharacterAdded:Connect(onCharacterAdded)
-    if player.Character then
-        onCharacterAdded(player.Character)
-    end
-end
-
--- Function to handle player removing
-local function onPlayerRemoving(player)
-    if player.Character then
-        removeESP(player.Character)
-    end
-end
-
--- Connect existing and future players
-for _, player in pairs(game.Players:GetPlayers()) do
-    onPlayerAdded(player)
-end
-game.Players.PlayerAdded:Connect(onPlayerAdded)
-game.Players.PlayerRemoving:Connect(onPlayerRemoving)
-
--- Create the toggle button for ESP
-PlayerTab:AddToggle({
-    Name = "Dinosaur ESP",
-    Default = false,
-    Callback = function(value)
-        espEnabled = value
-        if espEnabled then
-            for _, player in pairs(game.Players:GetPlayers()) do
-                if player.Character then
-                    createESP(player.Character)
-                end
-            end
-        else
-            for _, player in pairs(game.Players:GetPlayers()) do
-                if player.Character then
-                    removeESP(player.Character)
-                end
-            end
-        end
-    end
-})
-
--- Update ESP in real time when the local player's dinosaur respawns or menu-spawns
-game.Players.LocalPlayer.CharacterAdded:Connect(function(character)
-    if espEnabled then
-        for _, player in pairs(game.Players:GetPlayers()) do
-            if player.Character then
-                createESP(player.Character)
-            end
-        end
-    end
-end)
-
 -- Initialize the library
 OrionLib:Init()
 
@@ -299,40 +169,6 @@ AutoFarmTab:AddToggle({
 
 -- Initialize the library
 OrionLib:Init()
-
-local WaterInvisible = false
-
-local function setWaterVisibility(visible)
-    local waterObject = game:GetService("Workspace").GameMap.Water.Water
-    if waterObject then
-        waterObject.Transparency = visible and 0 or 1
-        waterObject.CanCollide = visible
-    else
-        print("Water object not found!")
-    end
-end
-
-local function startWaterInvisible()
-    WaterInvisible = true
-    setWaterVisibility(false)
-end
-
-local function stopWaterInvisible()
-    WaterInvisible = false
-    setWaterVisibility(true)
-end
-
-AutoFarmTab:AddToggle({
-    Name = "Remove The Water And See Inside It (PVP)",
-    Default = false,
-    Callback = function(Value)
-        if Value then
-            startWaterInvisible()
-        else
-            stopWaterInvisible()
-        end
-    end    
-})
 
 local player = game.Players.LocalPlayer
 local userId = player.UserId
@@ -442,7 +278,7 @@ local function onCharacterAdded(newCharacter)
     character = newCharacter
     humanoidRootPart = character:WaitForChild("HumanoidRootPart")
     if autoFarmEnabled then
-        floatToPlatform(500000000, 500, 12000, platformArgen) -- Significantly increased force and speed for Auto Farm Argen
+        floatToPlatform(5000000, 500, 12000, platformArgen) -- Significantly increased force and speed for Auto Farm Argen
     end
 end
 
@@ -451,7 +287,7 @@ local function onAutoFarmToggle(value)
     autoFarmEnabled = value
     antiAFKEnabled = value
     if autoFarmEnabled then
-        floatToPlatform(500000000, 500, 12000, platformArgen)
+        floatToPlatform(5000000, 500, 12000, platformArgen)
         spawn(startFoodAndWater) -- Start adding food and water in a separate thread
         spawn(antiAFK) -- Start anti-AFK
     else
@@ -467,7 +303,7 @@ character.ChildAdded:Connect(function(child)
     if child:IsA("Humanoid") then
         child:GetPropertyChangedSignal("Health"):Connect(function()
             if autoFarmEnabled and child.Health > 0 then
-                floatToPlatform(500000000, 500, 12000, platformArgen)
+                floatToPlatform(5000000, 500, 12000, platformArgen)
             end
         end)
     end
@@ -477,7 +313,7 @@ end)
 spawn(function()
     while true do
         if autoFarmEnabled then
-            floatToPlatform(500000000, 500, 12000, platformArgen)
+            floatToPlatform(5000000, 500, 12000, platformArgen)
         end
         wait(5) -- Re-apply every 5 seconds
     end
@@ -485,7 +321,7 @@ end)
 
 -- Add the toggle to the UI
 AutoFarmTab:AddToggle({
-    Name = "Auto Farm (Argentinosaurus)",
+    Name = "(Elder Need)|Auto Farm (Argentinosaurus)",
     Default = false,
     Callback = function(value)
         onAutoFarmToggle(value)
@@ -493,7 +329,7 @@ AutoFarmTab:AddToggle({
 })
 
 local player = game.Players.LocalPlayer
-local vehicleFlySpeed = 50 -- Default fly speed
+local vehicleFlySpeed = 20 -- Default fly speed
 local flying = false
 local vehicleGyro = nil
 local vehicleVelocity = nil
@@ -972,45 +808,64 @@ Section2:AddButton({
 local player = game.Players.LocalPlayer
 local espEnabled = false
 
--- Function to create ESP for a given Beam
-local function createESP(beam)
-    local espBox = Instance.new("BoxHandleAdornment")
-    espBox.Size = beam.Size
-    espBox.Adornee = beam
-    espBox.AlwaysOnTop = true
-    espBox.ZIndex = 10
-    espBox.Transparency = 0.5
-    espBox.Color3 = Color3.new(0, 0, 1) -- Blue color for the ESP box
-    espBox.Parent = beam
+-- Function to create a slightly larger circular ESP for a given object
+local function createESP(object)
+    local espCircle = Instance.new("CylinderHandleAdornment")
+    espCircle.Height = object.Size.Y * 3 -- Make it taller
+    espCircle.Radius = math.max(object.Size.X, object.Size.Z) * 2 -- Increase radius for better visibility
+    espCircle.Adornee = object
+    espCircle.AlwaysOnTop = true
+    espCircle.ZIndex = 10
+    espCircle.Transparency = 0.5
+    espCircle.Color3 = Color3.new(0, 0, 1) -- Blue color for the ESP circle
+    espCircle.Parent = object
 end
 
--- Function to remove ESP from a given Beam
-local function removeESP(beam)
-    if beam:FindFirstChild("BoxHandleAdornment") then
-        beam:FindFirstChild("BoxHandleAdornment"):Destroy()
+-- Function to remove ESP from a given object
+local function removeESP(object)
+    if object:FindFirstChild("CylinderHandleAdornment") then
+        object:FindFirstChild("CylinderHandleAdornment"):Destroy()
     end
 end
 
--- Function to update ESP for all Beams
+-- Function to update ESP for all relevant objects
 local function updateESP()
-    for _, beam in pairs(workspace:GetDescendants()) do
-        if beam.Name == "Beam" then -- Assuming the name of the Beam part is "Beam"
-            if espEnabled and not beam:FindFirstChild("BoxHandleAdornment") then
-                createESP(beam)
-            elseif not espEnabled and beam:FindFirstChild("BoxHandleAdornment") then
-                removeESP(beam)
+    -- Check for "Beam" in GameMap -> Miscellaneous
+    local miscellaneous = workspace:FindFirstChild("GameMap") and workspace.GameMap:FindFirstChild("Miscellaneous")
+    if miscellaneous then
+        for _, beam in pairs(miscellaneous:GetChildren()) do
+            if beam.Name == "Beam" then
+                if espEnabled and not beam:FindFirstChild("CylinderHandleAdornment") then
+                    createESP(beam)
+                elseif not espEnabled and beam:FindFirstChild("CylinderHandleAdornment") then
+                    removeESP(beam)
+                end
+            end
+        end
+    end
+    
+    -- Check for "Glass Beam" in ReplicatedStorage -> ModuleScripts -> UnlockableTagSettings
+    local unlockableTagSettings = game.ReplicatedStorage:FindFirstChild("ModuleScripts") and game.ReplicatedStorage.ModuleScripts:FindFirstChild("UnlockableTagSettings")
+    if unlockableTagSettings then
+        for _, glassBeam in pairs(unlockableTagSettings:GetChildren()) do
+            if glassBeam.Name == "Glass Beam" then
+                if espEnabled and not glassBeam:FindFirstChild("CylinderHandleAdornment") then
+                    createESP(glassBeam)
+                elseif not espEnabled and glassBeam:FindFirstChild("CylinderHandleAdornment") then
+                    removeESP(glassBeam)
+                end
             end
         end
     end
 end
 
--- Function to continuously search for and update ESP for Beams in real-time
+-- Function to continuously search for and update ESP for Beams and Glass Beams in real-time
 local function continuousESPUpdate()
     while true do
         if espEnabled then
             updateESP()
         end
-        wait(1) -- Check for new Beams every second
+        wait(1) -- Check for new objects every second
     end
 end
 
@@ -1022,7 +877,7 @@ end
 
 -- Add the toggle to the UI
 PlayerTab:AddToggle({
-    Name = "ESP for Beams",
+    Name = "ESP for Beams and Glass Beams",
     Default = false,
     Callback = function(value)
         onESPToggle(value)
@@ -1038,3 +893,344 @@ end)
 
 -- Start continuous ESP update in a separate thread
 spawn(continuousESPUpdate)
+
+local player = game.Players.LocalPlayer
+local regionBonusEnabled = false
+
+-- Function to apply the region bonus effects to the player
+local function applyRegionBonus()
+    local serverValues = workspace:FindFirstChild("ServerValues")
+    if serverValues then
+        print("Server Values found!")
+        local serverBonus = serverValues:FindFirstChild("ServerBonus")
+        if serverBonus then
+            print("Server Bonus found!")
+            -- Get the current region bonus (assuming it's a DNA multiplier or similar)
+            local currentRegionBonus = serverBonus:FindFirstChild("CurrentRegionBonus")
+            if currentRegionBonus then
+                print("Current Region Bonus found:", currentRegionBonus.Value)
+                -- Explore the player's data to find the correct path
+                for _, child in pairs(player:GetChildren()) do
+                    print("Child of player:", child.Name, child.ClassName)
+                    if child:FindFirstChild("DNA") then
+                        print("DNA found in:", child.Name)
+                        -- Apply the bonus to the player's DNA (example)
+                        local dnaMultiplier = 2 -- Placeholder for actual multiplier value
+                        child.DNA.Value = child.DNA.Value * dnaMultiplier
+                        print("Applied DNA multiplier:", dnaMultiplier)
+                    end
+                end
+            else
+                print("Current Region Bonus not found")
+            end
+        else
+            print("Server Bonus not found")
+        end
+    else
+        print("Server Values not found")
+    end
+end
+
+-- Function to continuously apply the region bonus
+local function continuousRegionBonus()
+    while regionBonusEnabled do
+        applyRegionBonus()
+        wait(10) -- Apply the bonus every 10 seconds, adjust as needed
+    end
+end
+
+-- Toggle callback function
+local function onRegionBonusToggle(value)
+    regionBonusEnabled = value
+    if regionBonusEnabled then
+        spawn(continuousRegionBonus) -- Start applying the region bonus
+    end
+end
+
+-- Add the toggle to the UI
+PlayerTab:AddToggle({
+    Name = "Infinite DNA Prank",
+    Default = false,
+    Callback = function(value)
+        onRegionBonusToggle(value)
+    end    
+})
+
+-- Ensure the region bonus is applied immediately upon enabling
+player.CharacterAdded:Connect(function(newCharacter)
+    if regionBonusEnabled then
+        applyRegionBonus()
+    end
+end)
+
+local player = game.Players.LocalPlayer
+local regionBonusEnabled = false
+
+-- Store the original region and state
+local originalRegion = player:GetAttribute("Region")
+local originalRegionName = player:GetAttribute("RegionName")
+
+-- Function to apply the region bonus effects to the player
+local function applyRegionBonus()
+    local serverValues = workspace:FindFirstChild("ServerValues")
+    if serverValues then
+        local serverBonus = serverValues:FindFirstChild("ServerBonus")
+        if serverBonus then
+            local currentRegionBonus = serverBonus:FindFirstChild("CurrentRegionBonus")
+            if currentRegionBonus then
+                -- Simulate player's presence within the bonus region's boundary bricks
+                local replicatedStorage = game:GetService("ReplicatedStorage")
+                local regionsFolder = replicatedStorage:FindFirstChild("Regions")
+                if regionsFolder then
+                    local regionFolder = regionsFolder:FindFirstChild(currentRegionBonus.Value)
+                    if regionFolder then
+                        local referenceBrick = regionFolder:FindFirstChildWhichIsA("Part")
+                        if referenceBrick then
+                            -- Force the player's current region attributes
+                            player:SetAttribute("Region", currentRegionBonus.Value)
+                            player:SetAttribute("RegionName", currentRegionBonus.Value)
+
+                            -- Simulate the player being within the region's boundary bricks
+                            referenceBrick.Position = player.Character.HumanoidRootPart.Position
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- Function to reset the player's region to the original state
+local function resetRegion()
+    player:SetAttribute("Region", originalRegion)
+    player:SetAttribute("RegionName", originalRegionName)
+end
+
+-- Function to continuously apply the region bonus
+local function continuousRegionBonus()
+    while regionBonusEnabled do
+        applyRegionBonus()
+        wait(10) -- Apply the bonus every 10 seconds, adjust as needed
+    end
+end
+
+-- Toggle callback function
+local function onRegionBonusToggle(value)
+    regionBonusEnabled = value
+    if regionBonusEnabled then
+        spawn(continuousRegionBonus) -- Start applying the region bonus
+    else
+        resetRegion() -- Reset to original region
+    end
+end
+
+-- Add the toggle to the UI
+AutoFarmTab:AddToggle({
+    Name = "Bypass Region",
+    Default = false,
+    Callback = function(value)
+        onRegionBonusToggle(value)
+    end    
+})
+
+-- Ensure region bonus is always active, even during fly, auto elder, and auto farm
+local function ensureRegionBonusAlwaysActive()
+    while true do
+        if regionBonusEnabled then
+            applyRegionBonus()
+        end
+        wait(5) -- Adjust the interval as needed to ensure smooth functionality
+    end
+end
+
+-- Reapply the region bonus when the player respawns
+player.CharacterAdded:Connect(function(newCharacter)
+    if regionBonusEnabled then
+        applyRegionBonus()
+    end
+end)
+
+-- Reapply the region bonus when the player dies
+player.CharacterRemoving:Connect(function()
+    if regionBonusEnabled then
+        applyRegionBonus()
+    end
+end)
+
+-- Start the background task to ensure region bonus is always active
+spawn(ensureRegionBonusAlwaysActive)
+
+local function ensureWaterPresence()
+    -- Find the water part in the game
+    local waterPart = workspace:FindFirstChild("WaterPart") -- Replace "WaterPart" with the actual name of the water part
+
+    if not waterPart then
+        -- Water part not found, create and add it back
+        print("Water part not found, creating water part...")
+        local newWaterPart = Instance.new("Part")
+        newWaterPart.Name = "WaterPart"
+        newWaterPart.Size = Vector3.new(100, 10, 100) -- Adjust size as needed
+        newWaterPart.Position = Vector3.new(0, 5, 0) -- Adjust position as needed
+        newWaterPart.Anchored = true
+        newWaterPart.CanCollide = false
+        newWaterPart.Transparency = 0.5
+        newWaterPart.Material = Enum.Material.Water
+        newWaterPart.Parent = workspace
+        print("Water part created and added to workspace.")
+    else
+        print("Water part found in workspace.")
+    end
+end
+
+-- Call the function to ensure water presence
+ensureWaterPresence()
+
+getgenv().enabled = true
+getgenv().filluseteamcolor = true
+getgenv().outlineuseteamcolor = true
+getgenv().fillcolor = Color3.new(0, 0, 0)
+getgenv().outlinecolor = Color3.new(1, 1, 1)
+getgenv().filltrans = 1
+getgenv().outlinetrans = 0
+
+local loadESP = loadstring(game:HttpGet("https://raw.githubusercontent.com/zntly/highlight-esp/main/esp.lua"))
+
+local espEnabled = false
+
+-- Function to update ESP settings
+local function updateESPSettings(filltrans, fillcolor, outlinecolor, outlineuseteamcolor, filluseteamcolor)
+    getgenv().filltrans = filltrans or getgenv().filltrans
+    getgenv().fillcolor = fillcolor or getgenv().fillcolor
+    getgenv().outlinecolor = outlinecolor or getgenv().outlinecolor
+    getgenv().outlineuseteamcolor = outlineuseteamcolor or getgenv().outlineuseteamcolor
+    getgenv().filluseteamcolor = filluseteamcolor or getgenv().filluseteamcolor
+end
+
+-- Function to create ESP highlights and labels for characters
+local function createESP(character)
+    if not character:FindFirstChildOfClass("Humanoid") then return end
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso")
+    
+    if humanoidRootPart then
+        -- Run external ESP script
+        loadESP()
+    end
+end
+
+-- Function to remove ESP highlights and labels for characters
+local function removeESP(character)
+    if character:FindFirstChild("Highlight") then
+        character.Highlight:Destroy()
+    end
+    if character:FindFirstChild("BillboardGui") then
+        character.BillboardGui:Destroy()
+    end
+end
+
+-- Function to handle character added
+local function onCharacterAdded(character)
+    if espEnabled then
+        createESP(character)
+    end
+end
+
+-- Function to handle player added
+local function onPlayerAdded(player)
+    player.CharacterAdded:Connect(onCharacterAdded)
+    if player.Character then
+        onCharacterAdded(player.Character)
+    end
+end
+
+-- Function to handle player removing
+local function onPlayerRemoving(player)
+    if player.Character then
+        removeESP(player.Character)
+    end
+end
+
+-- Connect existing and future players
+for _, player in pairs(game.Players:GetPlayers()) do
+    onPlayerAdded(player)
+end
+game.Players.PlayerAdded:Connect(onPlayerAdded)
+game.Players.PlayerRemoving:Connect(onPlayerRemoving)
+
+-- Function to toggle ESP on/off
+local function toggleESP(state)
+    espEnabled = state
+    getgenv().enabled = state
+    if espEnabled then
+        for _, player in pairs(game.Players:GetPlayers()) do
+            if player.Character then
+                createESP(player.Character)
+            end
+        end
+    else
+        for _, player in pairs(game.Players:GetPlayers()) do
+            if player.Character then
+                removeESP(player.Character)
+            end
+        end
+    end
+end
+
+-- Create a new tab for ESP
+local ESP_Tab = Window:MakeTab({
+    Name = "ESP",
+    Icon = "rbxassetid://4483362458", -- Use an appropriate icon ID
+    PremiumOnly = false
+})
+
+-- Create the toggle button for ESP in the new tab
+ESP_Tab:AddToggle({
+    Name = "Dinosaur ESP",
+    Default = false,
+    Callback = function(value)
+        toggleESP(value)
+    end    
+})
+
+-- Add customization sliders/buttons in the new tab
+ESP_Tab:AddSlider({
+    Name = "Fill Transparency",
+    Min = 0,
+    Max = 1,
+    Default = 1,
+    Increment = 0.1,
+    Callback = function(value)
+        updateESPSettings(value)
+    end
+})
+
+ESP_Tab:AddColorPicker({
+    Name = "Fill Color",
+    Default = getgenv().fillcolor,
+    Callback = function(value)
+        updateESPSettings(nil, value)
+    end
+})
+
+ESP_Tab:AddColorPicker({
+    Name = "Outline Color",
+    Default = getgenv().outlinecolor,
+    Callback = function(value)
+        updateESPSettings(nil, nil, value)
+    end
+})
+
+ESP_Tab:AddToggle({
+    Name = "Use Team Color for Outline",
+    Default = getgenv().outlineuseteamcolor,
+    Callback = function(value)
+        updateESPSettings(nil, nil, nil, value)
+    end
+})
+
+ESP_Tab:AddToggle({
+    Name = "Use Team Color for Fill",
+    Default = getgenv().filluseteamcolor,
+    Callback = function(value)
+        updateESPSettings(nil, nil, nil, nil, value)
+    end
+})
