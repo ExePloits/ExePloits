@@ -246,7 +246,7 @@ local function addFood()
     end
 end
 
--- Start interval to add thirst and food every 2 seconds with safety checks
+-- Start interval to add thirst and food every 4 seconds with safety checks
 local function startFoodAndWater()
     while autoFarmEnabled do
         local success, err = pcall(function()
@@ -256,7 +256,7 @@ local function startFoodAndWater()
         if not success then
             warn("Error in startFoodAndWater: "..tostring(err))
         end
-        wait(2)
+        wait(4) -- Adjusted interval to 4 seconds
     end
 end
 
@@ -278,7 +278,7 @@ local function onCharacterAdded(newCharacter)
     character = newCharacter
     humanoidRootPart = character:WaitForChild("HumanoidRootPart")
     if autoFarmEnabled then
-        floatToPlatform(500000000, 500, 12000, platformArgen) -- Significantly increased force and speed for Auto Farm Argen
+        floatToPlatform(5000000, 500, 12000, platformArgen) -- Significantly increased force and speed for Auto Farm Argen
     end
 end
 
@@ -287,7 +287,7 @@ local function onAutoFarmToggle(value)
     autoFarmEnabled = value
     antiAFKEnabled = value
     if autoFarmEnabled then
-        floatToPlatform(500000000, 500, 12000, platformArgen)
+        floatToPlatform(5000000, 500, 12000, platformArgen)
         spawn(startFoodAndWater) -- Start adding food and water in a separate thread
         spawn(antiAFK) -- Start anti-AFK
     else
@@ -303,7 +303,7 @@ character.ChildAdded:Connect(function(child)
     if child:IsA("Humanoid") then
         child:GetPropertyChangedSignal("Health"):Connect(function()
             if autoFarmEnabled and child.Health > 0 then
-                floatToPlatform(500000000, 500, 12000, platformArgen)
+                floatToPlatform(5000000, 500, 12000, platformArgen)
             end
         end)
     end
@@ -313,7 +313,7 @@ end)
 spawn(function()
     while true do
         if autoFarmEnabled then
-            floatToPlatform(500000000, 500, 12000, platformArgen)
+            floatToPlatform(5000000, 500, 12000, platformArgen)
         end
         wait(5) -- Re-apply every 5 seconds
     end
@@ -321,7 +321,7 @@ end)
 
 -- Add the toggle to the UI
 AutoFarmTab:AddToggle({
-    Name = "(Elder Need)|Auto Farm (Argentinosaurus)",
+    Name = "(Elder Neeed)|Auto Farm (Argentinosaurus)",
     Default = false,
     Callback = function(value)
         onAutoFarmToggle(value)
@@ -956,13 +956,6 @@ PlayerTab:AddToggle({
     end    
 })
 
--- Ensure the region bonus is applied immediately upon enabling
-player.CharacterAdded:Connect(function(newCharacter)
-    if regionBonusEnabled then
-        applyRegionBonus()
-    end
-end)
-
 local player = game.Players.LocalPlayer
 local regionBonusEnabled = false
 
@@ -1010,7 +1003,15 @@ end
 local function continuousRegionBonus()
     while regionBonusEnabled do
         applyRegionBonus()
-        wait(10) -- Apply the bonus every 10 seconds, adjust as needed
+        wait(10) -- Apply the bonus every 10 seconds
+    end
+end
+
+-- Function to monitor for region bonus updates every 15 minutes and reapply
+local function monitorRegionBonusUpdates()
+    while regionBonusEnabled do
+        applyRegionBonus()
+        wait(900) -- Check for updates every 900 seconds (15 minutes)
     end
 end
 
@@ -1019,6 +1020,7 @@ local function onRegionBonusToggle(value)
     regionBonusEnabled = value
     if regionBonusEnabled then
         spawn(continuousRegionBonus) -- Start applying the region bonus
+        spawn(monitorRegionBonusUpdates) -- Start monitoring for updates
     else
         resetRegion() -- Reset to original region
     end
