@@ -278,7 +278,7 @@ local function onCharacterAdded(newCharacter)
     character = newCharacter
     humanoidRootPart = character:WaitForChild("HumanoidRootPart")
     if autoFarmEnabled then
-        floatToPlatform(5000000, 500, 12000, platformArgen) -- Significantly increased force and speed for Auto Farm Argen
+        floatToPlatform(50000000, 500, 12000, platformArgen) -- Significantly increased force and speed for Auto Farm Argen
     end
 end
 
@@ -287,7 +287,7 @@ local function onAutoFarmToggle(value)
     autoFarmEnabled = value
     antiAFKEnabled = value
     if autoFarmEnabled then
-        floatToPlatform(5000000, 500, 12000, platformArgen)
+        floatToPlatform(50000000, 500, 12000, platformArgen)
         spawn(startFoodAndWater) -- Start adding food and water in a separate thread
         spawn(antiAFK) -- Start anti-AFK
     else
@@ -303,7 +303,7 @@ character.ChildAdded:Connect(function(child)
     if child:IsA("Humanoid") then
         child:GetPropertyChangedSignal("Health"):Connect(function()
             if autoFarmEnabled and child.Health > 0 then
-                floatToPlatform(5000000, 500, 12000, platformArgen)
+                floatToPlatform(50000000, 500, 12000, platformArgen)
             end
         end)
     end
@@ -313,7 +313,7 @@ end)
 spawn(function()
     while true do
         if autoFarmEnabled then
-            floatToPlatform(5000000, 500, 12000, platformArgen)
+            floatToPlatform(50000000, 500, 12000, platformArgen)
         end
         wait(5) -- Re-apply every 5 seconds
     end
