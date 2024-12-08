@@ -132,43 +132,125 @@ AutoFarmTab:AddButton({
 -- Initialize the library
 OrionLib:Init()
 
-local HungerLoopEnabled = false
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 
-local function HungerLoop()
-    while HungerLoopEnabled do
-        wait(0.1)
-        game.Workspace.GameEvents.EatPlant:FireServer(game.Workspace.GameMap.Ferns.Fern, 10) -- Increase hunger
-        local A_1 = game:GetService("Workspace").GameMap.Water.Water
-        local A_2 = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame.p
-        local Event = game:GetService("Workspace").GameEvents.addThirst
-        Event:FireServer(A_1, A_2) -- Give water
-        game.Workspace.GameEvents.EatPlant:FireServer(game.Workspace.GameMap.Ferns.Fern, 10) -- Increase hunger
+-- Default float parameters
+local floatForce = 50000000000
+local vehicleFloatSpeed = 260
+
+local bodyPosition = nil
+local bodyGyro = nil
+
+-- Function to float the player smoothly to the target using BodyPosition and BodyGyro
+local function floatToTarget(target)
+    if not bodyPosition then
+        bodyPosition = Instance.new("BodyPosition")
+        bodyPosition.MaxForce = Vector3.new(floatForce, floatForce, floatForce)
+        bodyPosition.D = 500 -- Damping
+        bodyPosition.P = vehicleFloatSpeed -- Speed
+        bodyPosition.Parent = humanoidRootPart
+    end
+    
+    if not bodyGyro then
+        bodyGyro = Instance.new("BodyGyro")
+        bodyGyro.MaxTorque = Vector3.new(floatForce, floatForce, floatForce)
+        bodyGyro.P = vehicleFloatSpeed -- Speed
+        bodyGyro.Parent = humanoidRootPart
+    end
+
+    local targetPosition = target.Position + Vector3.new(0, 5, 0) -- Float above the target (Beam or Bubble/Chest)
+    bodyPosition.Position = targetPosition
+end
+
+-- Function to simulate collecting the target
+local function collectTarget()
+    -- Add any in-game collection logic here if needed
+end
+
+-- Function to check for Beam in real-time
+local function checkForBeam()
+    local miscellaneous = workspace:FindFirstChild("GameMap") and workspace.GameMap:FindFirstChild("Miscellaneous")
+    if miscellaneous then
+        for _, beam in pairs(miscellaneous:GetChildren()) do
+            if beam.Name == "Beam" then
+                return beam
+            end
+        end
+    end
+    
+    local unlockableTagSettings = game.ReplicatedStorage:FindFirstChild("ModuleScripts"):FindFirstChild("UnlockableTagSettings")
+    if unlockableTagSettings then
+        local glassBeam = unlockableTagSettings:FindFirstChild("Glass Beam")
+        if glassBeam then
+            return glassBeam
+        end
+    end
+    
+    return nil
+end
+
+-- Function to check for Bubble (Chest) in real-time
+local function checkForBubble()
+    local miscellaneous = workspace:FindFirstChild("GameMap") and workspace.GameMap:FindFirstChild("Miscellaneous")
+    if miscellaneous then
+        for _, bubble in pairs(miscellaneous:GetChildren()) do
+            if bubble.Name == "Bubble" or bubble.Name == "Chest" then
+                return bubble
+            end
+        end
+    end
+    
+    return nil
+end
+
+-- Function to start real-time detection and floating to the Beam or Bubble (Chest)
+local autoFarmRunning = false
+
+local function startAutoFarming()
+    autoFarmRunning = true
+    while autoFarmRunning do
+        local target = checkForBeam()
+        if not target then
+            target = checkForBubble()
+        end
+
+        if target then
+            floatToTarget(target)
+            wait(6) -- Wait for 6 seconds to simulate collection
+            collectTarget() -- Simulate collecting the target
+        end
+        wait(1) -- Adjust the wait time for checking frequency
     end
 end
 
-local function startHungerLoop()
-    HungerLoopEnabled = true
-    HungerLoop()
+local function stopAutoFarming()
+    autoFarmRunning = false
+    
+    if bodyPosition then
+        bodyPosition:Destroy()
+        bodyPosition = nil
+    end
+    
+    if bodyGyro then
+        bodyGyro:Destroy()
+        bodyGyro = nil
+    end
 end
 
-local function stopHungerLoop()
-    HungerLoopEnabled = false
-end
-
+-- Add the Beam/Bubble (Chest) Auto Farm Toggle to Auto Farm Tab
 AutoFarmTab:AddToggle({
-    Name = "Infinite Food And Water(PVP)",
+    Name = "Glass Beam Auto Farm",
     Default = false,
-    Callback = function(Value)
-        if Value then
-            startHungerLoop()
+    Callback = function(value)
+        if value then
+            startAutoFarming()
         else
-            stopHungerLoop()
+            stopAutoFarming()
         end
-    end    
+    end
 })
-
--- Initialize the library
-OrionLib:Init()
 
 local player = game.Players.LocalPlayer
 local userId = player.UserId
@@ -1007,20 +1089,11 @@ local function continuousRegionBonus()
     end
 end
 
--- Function to monitor for region bonus updates every 15 minutes and reapply
-local function monitorRegionBonusUpdates()
-    while regionBonusEnabled do
-        applyRegionBonus()
-        wait(900) -- Check for updates every 900 seconds (15 minutes)
-    end
-end
-
 -- Toggle callback function
 local function onRegionBonusToggle(value)
     regionBonusEnabled = value
     if regionBonusEnabled then
         spawn(continuousRegionBonus) -- Start applying the region bonus
-        spawn(monitorRegionBonusUpdates) -- Start monitoring for updates
     else
         resetRegion() -- Reset to original region
     end
@@ -1061,6 +1134,59 @@ end)
 
 -- Start the background task to ensure region bonus is always active
 spawn(ensureRegionBonusAlwaysActive)
+
+local player = game.Players.LocalPlayer
+local regionBonusEnabled = false
+
+-- Function to apply the region bonus effects to the player
+local function applyRegionBonus()
+    local serverValues = workspace:FindFirstChild("ServerValues")
+    if serverValues then
+        print("Server Values found!")
+        local serverBonus = serverValues:FindFirstChild("ServerBonus")
+        if serverBonus then
+            print("Server Bonus found!")
+            -- Get the current region bonus (assuming it's a DNA multiplier or similar)
+            local currentRegionBonus = serverBonus:FindFirstChild("CurrentRegionBonus")
+            if currentRegionBonus then
+                print("Current Region Bonus found:", currentRegionBonus.Value)
+                -- Explore the player's data to find the correct path
+                for _, child in pairs(player:GetChildren()) do
+                    print("Child of player:", child.Name, child.ClassName)
+                    if child:FindFirstChild("DNA") then
+                        print("DNA found in:", child.Name)
+                        -- Apply the bonus to the player's DNA (example)
+                        local dnaMultiplier = 2 -- Placeholder for actual multiplier value
+                        child.DNA.Value = child.DNA.Value * dnaMultiplier
+                        print("Applied DNA multiplier:", dnaMultiplier)
+                    end
+                end
+            else
+                print("Current Region Bonus not found")
+            end
+        else
+            print("Server Bonus not found")
+        end
+    else
+        print("Server Values not found")
+    end
+end
+
+-- Function to continuously apply the region bonus
+local function continuousRegionBonus()
+    while regionBonusEnabled do
+        applyRegionBonus()
+        wait(10) -- Apply the bonus every 10 seconds, adjust as needed
+    end
+end
+
+-- Toggle callback function
+local function onRegionBonusToggle(value)
+    regionBonusEnabled = value
+    if regionBonusEnabled then
+        spawn(continuousRegionBonus) -- Start applying the region bonus
+    end
+end
 
 local function ensureWaterPresence()
     -- Find the water part in the game
