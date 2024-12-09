@@ -1084,7 +1084,10 @@ end
 -- Function to continuously apply the region bonus
 local function continuousRegionBonus()
     while regionBonusEnabled do
-        applyRegionBonus()
+        -- Apply bonus only if the current region is not "Wilderness"
+        if player:GetAttribute("Region") ~= "Wilderness" then
+            applyRegionBonus()
+        end
         wait(10) -- Apply the bonus every 10 seconds
     end
 end
@@ -1134,59 +1137,6 @@ end)
 
 -- Start the background task to ensure region bonus is always active
 spawn(ensureRegionBonusAlwaysActive)
-
-local player = game.Players.LocalPlayer
-local regionBonusEnabled = false
-
--- Function to apply the region bonus effects to the player
-local function applyRegionBonus()
-    local serverValues = workspace:FindFirstChild("ServerValues")
-    if serverValues then
-        print("Server Values found!")
-        local serverBonus = serverValues:FindFirstChild("ServerBonus")
-        if serverBonus then
-            print("Server Bonus found!")
-            -- Get the current region bonus (assuming it's a DNA multiplier or similar)
-            local currentRegionBonus = serverBonus:FindFirstChild("CurrentRegionBonus")
-            if currentRegionBonus then
-                print("Current Region Bonus found:", currentRegionBonus.Value)
-                -- Explore the player's data to find the correct path
-                for _, child in pairs(player:GetChildren()) do
-                    print("Child of player:", child.Name, child.ClassName)
-                    if child:FindFirstChild("DNA") then
-                        print("DNA found in:", child.Name)
-                        -- Apply the bonus to the player's DNA (example)
-                        local dnaMultiplier = 2 -- Placeholder for actual multiplier value
-                        child.DNA.Value = child.DNA.Value * dnaMultiplier
-                        print("Applied DNA multiplier:", dnaMultiplier)
-                    end
-                end
-            else
-                print("Current Region Bonus not found")
-            end
-        else
-            print("Server Bonus not found")
-        end
-    else
-        print("Server Values not found")
-    end
-end
-
--- Function to continuously apply the region bonus
-local function continuousRegionBonus()
-    while regionBonusEnabled do
-        applyRegionBonus()
-        wait(10) -- Apply the bonus every 10 seconds, adjust as needed
-    end
-end
-
--- Toggle callback function
-local function onRegionBonusToggle(value)
-    regionBonusEnabled = value
-    if regionBonusEnabled then
-        spawn(continuousRegionBonus) -- Start applying the region bonus
-    end
-end
 
 local function ensureWaterPresence()
     -- Find the water part in the game
