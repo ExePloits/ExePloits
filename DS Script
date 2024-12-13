@@ -137,7 +137,7 @@ local character = player.Character or player.CharacterAdded:Wait()
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 
 -- Default float parameters
-local floatForce = 50000000000
+local floatForce = 500000000
 local vehicleFloatSpeed = 260
 
 local bodyPosition = nil
@@ -360,7 +360,7 @@ local function onCharacterAdded(newCharacter)
     character = newCharacter
     humanoidRootPart = character:WaitForChild("HumanoidRootPart")
     if autoFarmEnabled then
-        floatToPlatform(500000000, 500, 12000, platformArgen) -- Significantly increased force and speed for Auto Farm Argen
+        floatToPlatform(50000000, 5, 1200, platformArgen) -- Significantly increased force and speed for Auto Farm Argen
     end
 end
 
@@ -369,7 +369,7 @@ local function onAutoFarmToggle(value)
     autoFarmEnabled = value
     antiAFKEnabled = value
     if autoFarmEnabled then
-        floatToPlatform(500000000, 500, 12000, platformArgen)
+        floatToPlatform(500000000, 5, 1200, platformArgen)
         spawn(startFoodAndWater) -- Start adding food and water in a separate thread
         spawn(antiAFK) -- Start anti-AFK
     else
@@ -385,7 +385,7 @@ character.ChildAdded:Connect(function(child)
     if child:IsA("Humanoid") then
         child:GetPropertyChangedSignal("Health"):Connect(function()
             if autoFarmEnabled and child.Health > 0 then
-                floatToPlatform(500000000, 500, 12000, platformArgen)
+                floatToPlatform(500000000, 5, 1200, platformArgen)
             end
         end)
     end
@@ -395,7 +395,7 @@ end)
 spawn(function()
     while true do
         if autoFarmEnabled then
-            floatToPlatform(500000000, 500, 12000, platformArgen)
+            floatToPlatform(500000000, 5, 1200, platformArgen)
         end
         wait(5) -- Re-apply every 5 seconds
     end
@@ -411,7 +411,7 @@ AutoFarmTab:AddToggle({
 })
 
 local player = game.Players.LocalPlayer
-local vehicleFlySpeed = 20 -- Default fly speed
+local vehicleFlySpeed = 0.9 -- Default fly speed
 local flying = false
 local vehicleGyro = nil
 local vehicleVelocity = nil
