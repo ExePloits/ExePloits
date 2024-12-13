@@ -137,11 +137,29 @@ local character = player.Character or player.CharacterAdded:Wait()
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 
 -- Default float parameters
-local floatForce = 500000000
-local vehicleFloatSpeed = 260
+local floatForce = 50000000000000
+local vehicleFloatSpeed = 700
 
 local bodyPosition = nil
 local bodyGyro = nil
+
+-- Function to enable noclip for the character
+local function enableNoclip()
+    for _, part in pairs(character:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = false
+        end
+    end
+end
+
+-- Function to disable noclip for the character
+local function disableNoclip()
+    for _, part in pairs(character:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = true
+        end
+    end
+end
 
 -- Function to float the player smoothly to the target using BodyPosition and BodyGyro
 local function floatToTarget(target)
@@ -160,8 +178,9 @@ local function floatToTarget(target)
         bodyGyro.Parent = humanoidRootPart
     end
 
-    local targetPosition = target.Position + Vector3.new(0, 5, 0) -- Float above the target (Beam or Bubble/Chest)
+    local targetPosition = target.Position + Vector3.new(0, 5, 0) -- Float above the target (Beam or Chest)
     bodyPosition.Position = targetPosition
+    enableNoclip() -- Enable noclip while floating
 end
 
 -- Function to simulate collecting the target
@@ -179,41 +198,79 @@ local function checkForBeam()
             end
         end
     end
-    
-    local unlockableTagSettings = game.ReplicatedStorage:FindFirstChild("ModuleScripts"):FindFirstChild("UnlockableTagSettings")
-    if unlockableTagSettings then
-        local glassBeam = unlockableTagSettings:FindFirstChild("Glass Beam")
-        if glassBeam then
-            return glassBeam
-        end
-    end
-    
     return nil
 end
 
--- Function to check for Bubble (Chest) in real-time
-local function checkForBubble()
+-- Function to check for Chest in real-time
+local function checkForChest()
     local miscellaneous = workspace:FindFirstChild("GameMap") and workspace.GameMap:FindFirstChild("Miscellaneous")
     if miscellaneous then
-        for _, bubble in pairs(miscellaneous:GetChildren()) do
-            if bubble.Name == "Bubble" or bubble.Name == "Chest" then
-                return bubble
+        for _, chest in pairs(miscellaneous:GetChildren()) do
+            if chest.Name == "Bubble" or chest.Name == "Chest" then
+                return chest
             end
         end
     end
-    
     return nil
 end
 
--- Function to start real-time detection and floating to the Beam or Bubble (Chest)
+-- Function to add thirst
+local function addThirst()
+    while true do
+        if not _G.LoopThirst then return end
+        pcall(function()
+            if game:GetService("Workspace").GameMap:FindFirstChild("Water") then
+                local water = game:GetService("Workspace").GameMap:FindFirstChild("Water")
+                if game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame.p then
+                    local position = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame.p
+                    local event = game:GetService("Workspace").GameEvents.addThirst
+                    event:FireServer(water, position)
+                end
+            end
+        end)
+        wait(4)
+    end
+end
+
+-- Function to add food
+local function addFood()
+    while true do
+        if not _G.LoopHunger then return end
+        pcall(function()
+            local fern = game.Workspace.GameMap.Ferns.Fern
+            if fern then
+                local event = game.Workspace.GameEvents.EatPlant
+                event:FireServer(fern, 2)
+            end
+        end)
+        wait(4)
+    end
+end
+
+-- Function to start providing thirst and food continuously
+local function startFoodAndWater()
+    _G.LoopThirst = true
+    _G.LoopHunger = true
+    spawn(addThirst) -- Start providing thirst in a separate thread
+    spawn(addFood) -- Start providing food in a separate thread
+end
+
+local function stopFoodAndWater()
+    _G.LoopThirst = false
+    _G.LoopHunger = false
+end
+
+-- Function to start real-time detection and floating to the Beam or Chest
 local autoFarmRunning = false
 
 local function startAutoFarming()
     autoFarmRunning = true
+    startFoodAndWater() -- Start providing thirst and food continuously
+
     while autoFarmRunning do
         local target = checkForBeam()
         if not target then
-            target = checkForBubble()
+            target = checkForChest()
         end
 
         if target then
@@ -227,6 +284,7 @@ end
 
 local function stopAutoFarming()
     autoFarmRunning = false
+    stopFoodAndWater() -- Stop providing thirst and food
     
     if bodyPosition then
         bodyPosition:Destroy()
@@ -237,11 +295,24 @@ local function stopAutoFarming()
         bodyGyro:Destroy()
         bodyGyro = nil
     end
+    
+    disableNoclip() -- Disable noclip when stopping
 end
 
--- Add the Beam/Bubble (Chest) Auto Farm Toggle to Auto Farm Tab
+-- Handle player respawn and death to continue auto farming
+local function onCharacterAdded(newCharacter)
+    character = newCharacter
+    humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+    if autoFarmRunning then
+        startAutoFarming()
+    end
+end
+
+player.CharacterAdded:Connect(onCharacterAdded)
+
+-- Add the Beam/Chest Auto Farm Toggle to Auto Farm Tab
 AutoFarmTab:AddToggle({
-    Name = "Glass Beam Auto Farm",
+    Name = "Full Glass/SDNA Farm",
     Default = false,
     Callback = function(value)
         if value then
