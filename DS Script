@@ -1,8 +1,62 @@
-local player = game.Players.localPlayer
+local OrionLib = loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Orion/main/source'))()
 
-local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
+local player = game.Players.LocalPlayer
+local uniqueIdentifier = "DinoSimScript_12345" -- Replace with your unique identifier
 
-local Window = OrionLib:MakeWindow({Name = "Exeploit", HidePremium = false, SaveConfig = true, ConfigFolder = "OrionTest"})
+-- Function to set the script identifier
+local function setScriptIdentifier()
+    if not player:GetAttribute("ScriptIdentifier") then
+        player:SetAttribute("ScriptIdentifier", uniqueIdentifier)
+    end
+    -- Setting user ID as an attribute for additional verification
+    player:SetAttribute("UserID", player.UserId)
+end
+
+-- Function to monitor player state and ensure identifier is set
+local function monitorPlayer()
+    while true do
+        if player and player.Character then
+            setScriptIdentifier()
+        end
+        wait(5) -- Check every 5 seconds
+    end
+end
+
+-- Start monitoring the player state
+spawn(monitorPlayer)
+
+-- Create the main window
+local Window = OrionLib:MakeWindow({Name = "ExePloits", HidePremium = false, SaveConfig = true, ConfigFolder = "PlayerControl"})
+local MainTab = Window:MakeTab({Name = "Main", Icon = "rbxassetid://4483345998", PremiumOnly = false})
+
+-- Add a button to send a red, player-only chat message
+MainTab:AddButton({
+    Name = "Exetior|Sonic Mensage",
+    Callback = function()
+        local message = "<font color='red'>Thanks So Much For the Support and using my script <3, I know where you live.</font>"
+        local ChatFrame = player.PlayerGui:WaitForChild("Chat"):WaitForChild("Frame")
+        local MessagesFrame = ChatFrame:WaitForChild("ChatChannelParentFrame"):WaitForChild("Frame_MessageLogDisplay"):WaitForChild("Scroller")
+
+        -- Create the message label
+        local messageLabel = Instance.new("TextLabel")
+        messageLabel.Size = UDim2.new(1, 0, 0, 18)
+        messageLabel.Text = message
+        messageLabel.TextColor3 = Color3.new(1, 0, 0) -- Red color
+        messageLabel.BackgroundTransparency = 1
+        messageLabel.TextStrokeTransparency = 1
+        messageLabel.Font = Enum.Font.SourceSansBold
+        messageLabel.TextSize = 18
+        messageLabel.TextWrapped = true
+
+        -- Add the message to the chat frame
+        messageLabel.Parent = MessagesFrame
+        wait(10) -- Message duration
+        messageLabel:Destroy()
+    end    
+})
+
+-- Initialize the GUI
+OrionLib:Init()
 
 --[[
 Name = <string> - The name of the UI.
@@ -1153,24 +1207,61 @@ local function createButton(name, callback)
     Button.Parent = TeleportFrame
 end
 
+-- Function to get a low-population server ID
+local function getLowPopulationServer(placeId)
+    local HttpService = game:GetService("HttpService")
+    local serversUrl = "https://games.roblox.com/v1/games/" .. placeId .. "/servers/Public?sortOrder=Asc&limit=100"
+    
+    local success, response = pcall(function()
+        return HttpService:GetAsync(serversUrl)
+    end)
+    
+    if success then
+        local serversData = HttpService:JSONDecode(response)
+        for _, server in ipairs(serversData.data) do
+            if server.playing < server.maxPlayers then
+                return server.id
+            end
+        end
+    else
+        warn("Failed to get server data: " .. response)
+    end
+    
+    return nil
+end
+
+-- Function to teleport the player to a low-population server
+local function teleportToLowPopulationServer(placeId)
+    local TeleportService = game:GetService("TeleportService")
+    local serverId = getLowPopulationServer(placeId)
+    if serverId then
+        TeleportService:TeleportToPlaceInstance(placeId, serverId, player)
+    else
+        warn("No suitable server found, teleporting to a new server instead.")
+        TeleportService:Teleport(placeId, player)
+    end
+end
+
 -- Add sections and buttons for teleportation
 createSection("Maps")
 createButton("Default Map 2018-2019", function()
     print("Teleporting to Default Map 2018-2019")
-    local teleportService = game:GetService("TeleportService")
-    teleportService:Teleport(15918631033, player)
+    teleportToLowPopulationServer(15918631033)
 end)
 
 createButton("Gallus Island", function()
     print("Teleporting to Gallus Island")
-    local teleportService = game:GetService("TeleportService")
-    teleportService:Teleport(794299040, player)
+    teleportToLowPopulationServer(794299040)
 end)
 
 createButton("Homelands", function()
     print("Teleporting to Homelands")
-    local teleportService = game:GetService("TeleportService")
-    teleportService:Teleport(16211666354, player)
+    teleportToLowPopulationServer(16211666354)
+end)
+
+createButton("Original Game", function()
+    print("Teleporting to Original Game")
+    teleportToLowPopulationServer(228181322)
 end)
 
 -- Function to handle the answer to the initial question
