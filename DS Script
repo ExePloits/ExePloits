@@ -1,62 +1,8 @@
-local OrionLib = loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Orion/main/source'))()
+local player = game.Players.localPlayer
 
-local player = game.Players.LocalPlayer
-local uniqueIdentifier = "DinoSimScript_12345" -- Replace with your unique identifier
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
 
--- Function to set the script identifier
-local function setScriptIdentifier()
-    if not player:GetAttribute("ScriptIdentifier") then
-        player:SetAttribute("ScriptIdentifier", uniqueIdentifier)
-    end
-    -- Setting user ID as an attribute for additional verification
-    player:SetAttribute("UserID", player.UserId)
-end
-
--- Function to monitor player state and ensure identifier is set
-local function monitorPlayer()
-    while true do
-        if player and player.Character then
-            setScriptIdentifier()
-        end
-        wait(5) -- Check every 5 seconds
-    end
-end
-
--- Start monitoring the player state
-spawn(monitorPlayer)
-
--- Create the main window
-local Window = OrionLib:MakeWindow({Name = "ExePloits", HidePremium = false, SaveConfig = true, ConfigFolder = "PlayerControl"})
-local MainTab = Window:MakeTab({Name = "Main", Icon = "rbxassetid://4483345998", PremiumOnly = false})
-
--- Add a button to send a red, player-only chat message
-MainTab:AddButton({
-    Name = "Exetior|Sonic Mensage",
-    Callback = function()
-        local message = "<font color='red'>Thanks So Much For the Support and using my script <3, I know where you live.</font>"
-        local ChatFrame = player.PlayerGui:WaitForChild("Chat"):WaitForChild("Frame")
-        local MessagesFrame = ChatFrame:WaitForChild("ChatChannelParentFrame"):WaitForChild("Frame_MessageLogDisplay"):WaitForChild("Scroller")
-
-        -- Create the message label
-        local messageLabel = Instance.new("TextLabel")
-        messageLabel.Size = UDim2.new(1, 0, 0, 18)
-        messageLabel.Text = message
-        messageLabel.TextColor3 = Color3.new(1, 0, 0) -- Red color
-        messageLabel.BackgroundTransparency = 1
-        messageLabel.TextStrokeTransparency = 1
-        messageLabel.Font = Enum.Font.SourceSansBold
-        messageLabel.TextSize = 18
-        messageLabel.TextWrapped = true
-
-        -- Add the message to the chat frame
-        messageLabel.Parent = MessagesFrame
-        wait(10) -- Message duration
-        messageLabel:Destroy()
-    end    
-})
-
--- Initialize the GUI
-OrionLib:Init()
+local Window = OrionLib:MakeWindow({Name = "Exeploit", HidePremium = false, SaveConfig = true, ConfigFolder = "OrionTest"})
 
 --[[
 Name = <string> - The name of the UI.
