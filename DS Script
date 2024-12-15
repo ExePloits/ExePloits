@@ -312,7 +312,7 @@ player.CharacterAdded:Connect(onCharacterAdded)
 
 -- Add the Beam/Chest Auto Farm Toggle to Auto Farm Tab
 AutoFarmTab:AddToggle({
-    Name = "Full Glass/SDNA Farm",
+    Name = "Glass Beam Auto Farm",
     Default = false,
     Callback = function(value)
         if value then
@@ -337,6 +337,11 @@ platformArgen.Parent = workspace
 
 local autoFarmEnabled = false
 local antiAFKEnabled = false -- Initial state of the anti-AFK
+local regionBonusEnabled = false -- Initial state of the region bonus
+
+-- Store the original region and state
+local originalRegion = player:GetAttribute("Region")
+local originalRegionName = player:GetAttribute("RegionName")
 
 -- Function to make all parts of the character non-collidable
 local function setCharacterNonCollidable(collide)
@@ -347,9 +352,9 @@ local function setCharacterNonCollidable(collide)
     end
 end
 
--- Function to float the player smoothly to the platform using BodyPosition and BodyGyro
-local function floatToPlatform(force, damping, speed, platform)
-    local targetPosition = platform.Position + Vector3.new(0, 5, 0)
+-- Function to float the player smoothly above the platform using BodyPosition and BodyGyro
+local function floatAbovePlatform(force, damping, speed, platform)
+    local targetPosition = platform.Position + Vector3.new(0, 10, 0) -- Float above the platform
     local bodyPosition = Instance.new("BodyPosition")
     bodyPosition.Position = targetPosition
     bodyPosition.MaxForce = Vector3.new(force, force, force)
@@ -366,51 +371,45 @@ local function floatToPlatform(force, damping, speed, platform)
     -- Enable noclip
     setCharacterNonCollidable(false)
 
-    humanoidRootPart.Anchored = true
-    wait(1)
-    humanoidRootPart.Anchored = false
-
     wait(5) -- Keep non-collidable for a while
     setCharacterNonCollidable(true) -- Restore collision
 end
 
 -- Function to add thirst
 local function addThirst()
-    local water = game:GetService("Workspace").GameMap.Water.Water
-    local position = player.Character.HumanoidRootPart.CFrame.p
-    local event = game:GetService("Workspace").GameEvents.addThirst
-    local success, err = pcall(function()
-        event:FireServer(water, position)
-    end)
-    if not success then
-        warn("Failed to add thirst: "..tostring(err))
+    while autoFarmEnabled do
+        pcall(function()
+            if game:GetService("Workspace").GameMap:FindFirstChild("Water") then
+                local water = game:GetService("Workspace").GameMap:FindFirstChild("Water")
+                if game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame.p then
+                    local position = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame.p
+                    local event = game:GetService("Workspace").GameEvents.addThirst
+                    event:FireServer(water, position)
+                end
+            end
+        end)
+        wait(4)
     end
 end
 
 -- Function to add food
 local function addFood()
-    local fern = game.Workspace.GameMap.Ferns.Fern
-    local event = game.Workspace.GameEvents.EatPlant
-    local success, err = pcall(function()
-        event:FireServer(fern, 2)
-    end)
-    if not success then
-        warn("Failed to add food: "..tostring(err))
+    while autoFarmEnabled do
+        pcall(function()
+            local fern = game.Workspace.GameMap.Ferns.Fern
+            if fern then
+                local event = game.Workspace.GameEvents.EatPlant
+                event:FireServer(fern, 2)
+            end
+        end)
+        wait(4)
     end
 end
 
 -- Start interval to add thirst and food every 4 seconds with safety checks
 local function startFoodAndWater()
-    while autoFarmEnabled do
-        local success, err = pcall(function()
-            addThirst()
-            addFood()
-        end)
-        if not success then
-            warn("Error in startFoodAndWater: "..tostring(err))
-        end
-        wait(4) -- Adjusted interval to 4 seconds
-    end
+    spawn(addThirst) -- Start providing thirst in a separate thread
+    spawn(addFood) -- Start providing food in a separate thread
 end
 
 -- Function to prevent AFK kick
@@ -426,53 +425,155 @@ local function antiAFK()
     end
 end
 
--- Function to handle character respawn or growth
-local function onCharacterAdded(newCharacter)
-    character = newCharacter
-    humanoidRootPart = character:WaitForChild("HumanoidRootPart")
-    if autoFarmEnabled then
-        floatToPlatform(50000000, 5, 1200, platformArgen) -- Significantly increased force and speed for Auto Farm Argen
+-- Function to apply the region bonus effects to the player
+local function applyRegionBonus()
+    local serverValues = workspace:FindFirstChild("ServerValues")
+    if serverValues then
+        local serverBonus = serverValues:FindFirstChild("ServerBonus")
+        if serverBonus then
+            local currentRegionBonus = serverBonus:FindFirstChild("CurrentRegionBonus")
+            if currentRegionBonus then
+                -- Simulate player's presence within the bonus region's boundary bricks
+                local replicatedStorage = game:GetService("ReplicatedStorage")
+                local regionsFolder = replicatedStorage:FindFirstChild("Regions")
+                if regionsFolder then
+                    local regionFolder = regionsFolder:FindFirstChild(currentRegionBonus.Value)
+                    if regionFolder then
+                        local referenceBrick = regionFolder:FindFirstChildWhichIsA("Part")
+                        if referenceBrick then
+                            -- Force the player's current region attributes
+                            player:SetAttribute("Region", currentRegionBonus.Value)
+                            player:SetAttribute("RegionName", currentRegionBonus.Value)
+
+                            -- Simulate the player being within the region's boundary bricks
+                            referenceBrick.Position = player.Character.HumanoidRootPart.Position
+                        end
+                    end
+                end
+            end
+        end
     end
 end
 
--- Toggle callback function
+-- Function to reset the player's region to the original state
+local function resetRegion()
+    player:SetAttribute("Region", originalRegion)
+    player:SetAttribute("RegionName", originalRegionName)
+end
+
+-- Function to continuously apply the region bonus
+local function continuousRegionBonus()
+    while regionBonusEnabled do
+        -- Apply bonus only if the current region is not "Wilderness"
+        if player:GetAttribute("Region") ~= "Wilderness" then
+            applyRegionBonus()
+        end
+        wait(10) -- Apply the bonus every 10 seconds
+    end
+end
+
+-- Toggle callback function for region bonus
+local function onRegionBonusToggle(value)
+    regionBonusEnabled = value
+    if regionBonusEnabled then
+        spawn(continuousRegionBonus) -- Start applying the region bonus
+    else
+        resetRegion() -- Reset to original region
+    end
+end
+
+-- Toggle callback function for auto farm
 local function onAutoFarmToggle(value)
     autoFarmEnabled = value
     antiAFKEnabled = value
     if autoFarmEnabled then
-        floatToPlatform(500000000, 5, 1200, platformArgen)
-        spawn(startFoodAndWater) -- Start adding food and water in a separate thread
+        floatAbovePlatform(500000000, 5, 1200, platformArgen)
+        startFoodAndWater() -- Start adding food and water in a separate thread
         spawn(antiAFK) -- Start anti-AFK
     else
         antiAFKEnabled = false -- Stop anti-AFK
+        humanoidRootPart.Anchored = false -- Ensure the character is not anchored when auto farm is off
     end
 end
 
 -- Connect the character added event to handle respawn and growth
-player.CharacterAdded:Connect(onCharacterAdded)
+player.CharacterAdded:Connect(function(newCharacter)
+    character = newCharacter
+    humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+    if autoFarmEnabled then
+        floatAbovePlatform(500000000, 5, 1200, platformArgen)
+    end
+    if regionBonusEnabled then
+        applyRegionBonus()
+    end
+end)
 
--- Ensure the player floats to the platform whenever they spawn or grow
+-- Ensure the player floats above the platform whenever they spawn or grow
 character.ChildAdded:Connect(function(child)
     if child:IsA("Humanoid") then
         child:GetPropertyChangedSignal("Health"):Connect(function()
             if autoFarmEnabled and child.Health > 0 then
-                floatToPlatform(500000000, 5, 1200, platformArgen)
+                floatAbovePlatform(500000000, 5, 1200, platformArgen)
             end
         end)
     end
 end)
 
--- Re-apply float to platform every few seconds to handle growth stages
+-- Re-apply float above platform every few seconds to handle growth stages
 spawn(function()
     while true do
         if autoFarmEnabled then
-            floatToPlatform(500000000, 5, 1200, platformArgen)
+            floatAbovePlatform(500000000, 5, 1200, platformArgen)
         end
         wait(5) -- Re-apply every 5 seconds
     end
 end)
 
+-- Ensure region bonus is always active, even during fly, auto elder, and auto farm
+spawn(function()
+    while true do
+        if regionBonusEnabled then
+            applyRegionBonus()
+        end
+        wait(5) -- Adjust the interval as needed to ensure smooth functionality
+    end
+end)
+
+local player = game.Players.LocalPlayer
+
+local foodForArgenEnabled = false -- Initial state of the food for Argen farm
+
+-- Function to add food
+local function addFood()
+    while foodForArgenEnabled do
+        pcall(function()
+            local fern = game.Workspace.GameMap.Ferns.Fern
+            if fern then
+                local event = game.Workspace.GameEvents.EatPlant
+                event:FireServer(fern, 2)
+            end
+        end)
+        wait(4)
+    end
+end
+
+-- Toggle callback function for food for Argen farm
+local function onFoodForArgenToggle(value)
+    foodForArgenEnabled = value
+    if foodForArgenEnabled then
+        spawn(addFood) -- Start providing food in a separate thread
+    end
+end
+
 -- Add the toggle to the UI
+AutoFarmTab:AddToggle({
+    Name = "Food For Argen Farm",
+    Default = false,
+    Callback = function(value)
+        onFoodForArgenToggle(value)
+    end
+})
+
 AutoFarmTab:AddToggle({
     Name = "(Elder Neeed)|Auto Farm (Argentinosaurus)",
     Default = false,
