@@ -1060,93 +1060,130 @@ Section2:AddButton({
 })
 
 local player = game.Players.LocalPlayer
-local espEnabled = false
 
--- Function to create a slightly larger circular ESP for a given object
-local function createESP(object)
-    local espCircle = Instance.new("CylinderHandleAdornment")
-    espCircle.Height = object.Size.Y * 3 -- Make it taller
-    espCircle.Radius = math.max(object.Size.X, object.Size.Z) * 2 -- Increase radius for better visibility
-    espCircle.Adornee = object
-    espCircle.AlwaysOnTop = true
-    espCircle.ZIndex = 10
-    espCircle.Transparency = 0.5
-    espCircle.Color3 = Color3.new(0, 0, 1) -- Blue color for the ESP circle
-    espCircle.Parent = object
+-- Create the main window
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "TeleportDS"
+ScreenGui.Parent = game.CoreGui
+
+-- Create the initial question frame
+local QuestionFrame = Instance.new("Frame")
+QuestionFrame.Size = UDim2.new(0, 300, 0, 150)
+QuestionFrame.Position = UDim2.new(0.5, -150, 0.5, -75)
+QuestionFrame.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+QuestionFrame.Parent = ScreenGui
+
+-- Create a title label for the question
+local QuestionTitle = Instance.new("TextLabel")
+QuestionTitle.Size = UDim2.new(1, 0, 0.4, 0)
+QuestionTitle.Position = UDim2.new(0, 0, 0, 0)
+QuestionTitle.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
+QuestionTitle.TextColor3 = Color3.new(1, 1, 1)
+QuestionTitle.Text = "Would you like to load teleport to old maps?"
+QuestionTitle.Font = Enum.Font.SourceSans
+QuestionTitle.TextSize = 24
+QuestionTitle.Parent = QuestionFrame
+
+-- Create "Yes" button
+local YesButton = Instance.new("TextButton")
+YesButton.Size = UDim2.new(0.4, -10, 0.3, -10)
+YesButton.Position = UDim2.new(0.05, 0, 0.6, 0)
+YesButton.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+YesButton.TextColor3 = Color3.new(1, 1, 1)
+YesButton.Text = "Yes"
+YesButton.Font = Enum.Font.SourceSans
+YesButton.TextSize = 20
+YesButton.Parent = QuestionFrame
+
+-- Create "No" button
+local NoButton = Instance.new("TextButton")
+NoButton.Size = UDim2.new(0.4, -10, 0.3, -10)
+NoButton.Position = UDim2.new(0.55, 0, 0.6, 0)
+NoButton.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+NoButton.TextColor3 = Color3.new(1, 1, 1)
+NoButton.Text = "No"
+NoButton.Font = Enum.Font.SourceSans
+NoButton.TextSize = 20
+NoButton.Parent = QuestionFrame
+
+-- Create the main teleport frame (initially invisible)
+local TeleportFrame = Instance.new("Frame")
+TeleportFrame.Size = UDim2.new(0, 300, 0, 400)
+TeleportFrame.Position = UDim2.new(0.5, -150, 0.5, -200)
+TeleportFrame.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+TeleportFrame.Parent = ScreenGui
+TeleportFrame.Visible = false
+
+-- Create a title label for the teleport frame
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0.1, 0)
+Title.Position = UDim2.new(0, 0, 0, 0)
+Title.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
+Title.TextColor3 = Color3.new(1, 1, 1)
+Title.Text = "Teleport DS"
+Title.Font = Enum.Font.SourceSans
+Title.TextSize = 24
+Title.Parent = TeleportFrame
+
+-- Function to create a section label
+local function createSection(name)
+    local Section = Instance.new("TextLabel")
+    Section.Size = UDim2.new(1, -20, 0, 30)
+    Section.Position = UDim2.new(0, 10, 0, 30 + (#TeleportFrame:GetChildren() - 2) * 60)
+    Section.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+    Section.TextColor3 = Color3.new(1, 1, 1)
+    Section.Text = name
+    Section.Font = Enum.Font.SourceSans
+    Section.TextSize = 20
+    Section.TextXAlignment = Enum.TextXAlignment.Left
+    Section.Parent = TeleportFrame
 end
 
--- Function to remove ESP from a given object
-local function removeESP(object)
-    if object:FindFirstChild("CylinderHandleAdornment") then
-        object:FindFirstChild("CylinderHandleAdornment"):Destroy()
-    end
+-- Function to create a button
+local function createButton(name, callback)
+    local Button = Instance.new("TextButton")
+    Button.Size = UDim2.new(1, -20, 0, 50)
+    Button.Position = UDim2.new(0, 10, 0, 60 + (#TeleportFrame:GetChildren() - 2) * 60)
+    Button.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+    Button.TextColor3 = Color3.new(1, 1, 1)
+    Button.Text = name
+    Button.Font = Enum.Font.SourceSans
+    Button.TextSize = 20
+    Button.MouseButton1Click:Connect(callback)
+    Button.Parent = TeleportFrame
 end
 
--- Function to update ESP for all relevant objects
-local function updateESP()
-    -- Check for "Beam" in GameMap -> Miscellaneous
-    local miscellaneous = workspace:FindFirstChild("GameMap") and workspace.GameMap:FindFirstChild("Miscellaneous")
-    if miscellaneous then
-        for _, beam in pairs(miscellaneous:GetChildren()) do
-            if beam.Name == "Beam" then
-                if espEnabled and not beam:FindFirstChild("CylinderHandleAdornment") then
-                    createESP(beam)
-                elseif not espEnabled and beam:FindFirstChild("CylinderHandleAdornment") then
-                    removeESP(beam)
-                end
-            end
-        end
-    end
-    
-    -- Check for "Glass Beam" in ReplicatedStorage -> ModuleScripts -> UnlockableTagSettings
-    local unlockableTagSettings = game.ReplicatedStorage:FindFirstChild("ModuleScripts") and game.ReplicatedStorage.ModuleScripts:FindFirstChild("UnlockableTagSettings")
-    if unlockableTagSettings then
-        for _, glassBeam in pairs(unlockableTagSettings:GetChildren()) do
-            if glassBeam.Name == "Glass Beam" then
-                if espEnabled and not glassBeam:FindFirstChild("CylinderHandleAdornment") then
-                    createESP(glassBeam)
-                elseif not espEnabled and glassBeam:FindFirstChild("CylinderHandleAdornment") then
-                    removeESP(glassBeam)
-                end
-            end
-        end
-    end
-end
-
--- Function to continuously search for and update ESP for Beams and Glass Beams in real-time
-local function continuousESPUpdate()
-    while true do
-        if espEnabled then
-            updateESP()
-        end
-        wait(1) -- Check for new objects every second
-    end
-end
-
--- Toggle callback function
-local function onESPToggle(value)
-    espEnabled = value
-    updateESP() -- Ensure ESP is updated immediately when the toggle is changed
-end
-
--- Add the toggle to the UI
-PlayerTab:AddToggle({
-    Name = "ESP for Beams and Glass Beams",
-    Default = false,
-    Callback = function(value)
-        onESPToggle(value)
-    end    
-})
-
--- Monitor for changes in character or relevant events
-player.CharacterAdded:Connect(function(newCharacter)
-    if espEnabled then
-        updateESP() -- Update ESP if a new character spawns
-    end
+-- Add sections and buttons for teleportation
+createSection("Maps")
+createButton("Default Map 2018-2019", function()
+    print("Teleporting to Default Map 2018-2019")
+    local teleportService = game:GetService("TeleportService")
+    teleportService:Teleport(15918631033, player)
 end)
 
--- Start continuous ESP update in a separate thread
-spawn(continuousESPUpdate)
+createButton("Gallus Island", function()
+    print("Teleporting to Gallus Island")
+    local teleportService = game:GetService("TeleportService")
+    teleportService:Teleport(794299040, player)
+end)
+
+createButton("Homelands", function()
+    print("Teleporting to Homelands")
+    local teleportService = game:GetService("TeleportService")
+    teleportService:Teleport(16211666354, player)
+end)
+
+-- Function to handle the answer to the initial question
+YesButton.MouseButton1Click:Connect(function()
+    QuestionFrame:Destroy()
+    TeleportFrame.Visible = true
+end)
+
+NoButton.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
+print("Script executed successfully!")
 
 local player = game.Players.LocalPlayer
 local regionBonusEnabled = false
